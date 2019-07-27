@@ -13,27 +13,17 @@ class Layer():
                shape = (0, 0), 
                activation = 'linear', 
                weight_init = 'xavier',
-               use_bias = True):
+               use_bias = True,
+               bias_init = 'zeros'):
 
     self.shape = shape
     self.use_bias = use_bias
-    '''
-    TODO: choose between this notation and the self.shape indexing notation
-    atm we're using both
-    '''
-    # Hidden size, Input size, Channel size
-    self.hs = self.shape[0]
-    self.ins= self.shape[1]
     '''
     TODO: Init-ing to None for now, change to an np.zeros with correct shape
     '''
     self.error = None
     
     def _init_weights():
-      if self.use_bias:
-        # If using bias, add one column to the weight matrix
-        self.shape = (self.hs, self.ins + 1)
-
       if weight_init in ['xavier', 'uniform', 'normal', 'zeros', 'ones']:
         if weight_init == 'uniform':
           self.weights = np.random.uniform(-1,1, size=self.shape)
@@ -45,10 +35,23 @@ class Layer():
           self.weights = np.ones(self.shape)
       
         self.gradient = np.zeros_like(self.weights)
-      
+
       else:
         raise Exception
-        
+    
+    def _init_bias():
+      bias_shape = (self.shape[0], )
+      self.bias = np.zeros(bias_shape)
+      if use_bias and bias_init in ['uniform', 'normal', 'zeros', 'ones']:
+        if bias_init == 'uniform':
+          self.bias = np.random.uniform(-1,1, size=bias_shape)
+        elif bias_init == 'normal':
+          self.bias = np.random.randn(bias_shape[0], )
+        elif bias_init == 'zeros':
+          self.bias = np.zeros(bias_shape)
+        elif bias_init == 'ones':
+          self.bias = np.ones(bias_shape)
+
     def _init_activation():
       if activation in ['relu', 'leaky_relu', 'linear', 'sigmoid', 'softmax']:
         if activation == 'relu':
@@ -65,30 +68,20 @@ class Layer():
         raise Exception
         
     _init_weights()
+    _init_bias()
     _init_activation()
         
     return
   
 
   def forward(self, x):
-    if self.use_bias:
-      try:
-        # Add bias by making first row in input equal to 1
-        bias_row = np.ones((1, x.shape[1]))
-      except: 
-        x = np.expand_dims(x, axis=1)
-        bias_row = np.ones((1, x.shape[1]))
-      x = np.concatenate((bias_row, x), axis=0)
-    
-    
     self.wx = self.weights.dot(x)
     self.out = self.activation(self.wx)
     return self.out
   
   def backward(self, next_layer):
     dwx = self.activation.derivative(self.wx)    
-    self.error = next_layer.weights[:,:-1].T.dot(next_layer.error) * dwx
-    
+    self.error = next_layer.weights.T.dot(next_layer.error) * dwx
     next_layer_gradient = next_layer.error.dot(self.out.T)
     return next_layer_gradient
   
@@ -101,6 +94,6 @@ class Output(Layer):
   pass
 
 class Softmax(Layer):
-  
+
   def __init__(self):
     self.activation = Softmax()

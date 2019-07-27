@@ -49,9 +49,10 @@ class Network():
         else:
           next_layer.gradient = layer.backward(next_layer)
           # Update weights
-          next_layer.weights[:,:-1] -= learning_rate/batch_size * next_layer.gradient
+          next_layer.weights -= learning_rate/batch_size * next_layer.gradient
           # Update bias (sum error over batches)
-          next_layer.weights[:,-1] -= learning_rate/batch_size * next_layer.error.sum(axis=1)          
+          if next_layer.use_bias:
+            next_layer.bias -= learning_rate/batch_size * next_layer.error.sum(axis=1)
         next_layer = layer
     
     if plot_loss:
