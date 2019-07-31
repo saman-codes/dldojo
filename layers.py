@@ -16,10 +16,13 @@ class Layer():
                  activation='linear',
                  weight_init='xavier',
                  use_bias=True,
-                 bias_init='zeros'):
-
+                 bias_init='zeros',
+                 is_trainable=True):
+        
+        self.is_trainable = is_trainable
         self.shape = shape
         self.use_bias = use_bias
+        self.is_output_layer = False
         '''
     TODO: Init-ing to None for now, change to an np.zeros with correct shape
     '''
@@ -91,12 +94,14 @@ class Layer():
 class Feedforward(Layer):
     pass
 
-
 class Output(Layer):
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.is_output_layer = True
+        return
 
-
-class Softmax(Layer):
-
-    def __init__(self):
-        self.activation = Softmax()
+class Dropout(Layer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.is_trainable = False
+        return

@@ -59,8 +59,8 @@ class Network():
                 self.training_loss.append((epoch, loss))
                 if verbose:
                     logging.info(f'Training loss: {loss}')
-                for i, layer in enumerate(reversed(self.layers)):
-                    if i == 0:
+                for layer in reversed(self.layers):
+                    if layer.is_output_layer:
                         dwx = layer.activation.derivative(layer.wx)
                         if isinstance(self.loss, CrossEntropy):
                             # CrossEntropy loss cancels out the sigma' term
@@ -82,14 +82,13 @@ class Network():
             plt.show()
 
     def predict(self, x):
-        # Get input shape from first layer and output shape from last layer
+        # Get output shape from last layer
         os = self.layers[-1].shape
         output = np.empty(os)
-        for i, layer in enumerate(self.layers):
-            if i == 0:
-                output = self.layers[i].forward(x)
-            else:
-                output = self.layers[i].forward(output)
+        input_layer = self.layers[0]
+        output = input_layer.forward(x)
+        for layer in self.layers[1:]:
+            output = layer.forward(output)
         return output
 
     def add(self, layer):

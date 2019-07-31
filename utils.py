@@ -32,7 +32,7 @@ def predict_random_mnist(x, y, net, save_plot=False):
     cols = 3
     rows = 3
     fig = plt.figure(figsize=(5,5))
-    plt.title(f'{net.__name__} - {net.} ', fontsize=12)
+    plt.title(f'{net.__name__}', fontsize=12, y=1.08)
     plt.xticks([])
     plt.yticks([])
     for idx in range(1, cols*rows+1):

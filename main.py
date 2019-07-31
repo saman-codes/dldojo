@@ -8,11 +8,11 @@ import numpy as np
 
 def main():
     x_train, y_train, x_test, y_test = load_mnist(
-        train_set_size=1000, test_set_size=100)
+        train_set_size=50000, test_set_size=10000)
     ins = 784
     os = 10
     hs = 100
-    bs = 100
+    bs = 1000
     # loss = MSE()
     loss = CrossEntropy()
     net = Network()
@@ -27,7 +27,7 @@ def main():
               epochs=100, verbose=False, plot_loss=True)
     get_accuracy_mnist(x_test, y_test, net)
     plot_weights(net)
-    # predict_random_mnist(x_test, y_test, net, save_plot=True)
+    predict_random_mnist(x_test, y_test, net, save_plot=True)
 
 
 if __name__ == '__main__':
