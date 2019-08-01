@@ -11,7 +11,6 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 
-
 logging.basicConfig(format='%(message)s', level=logging.INFO)
 
 class Network():
@@ -75,7 +74,7 @@ class Network():
                         if next_layer.use_bias:
                             next_layer.bias -= learning_rate / \
                                 batch_size * next_layer.error.sum(axis=1)
-                    next_layer = layer
+                    next_layer = layer                    
                 idx += batch_size
         if plot_loss:
             plt.plot([i[0] for i in self.training_loss], [i[1] for i in self.training_loss])

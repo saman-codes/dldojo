@@ -27,6 +27,25 @@ def load_mnist(train_set_size=1000, test_set_size=100):
     y_test_bin = np.eye(10)[y_test].T
     return x_train, y_train_bin, x_test, y_test_bin
 
+def plot_random_mnist_autoencoder(net, save_plot=False):
+    cols = 3
+    rows = 3
+    fig = plt.figure(figsize=(5,5))
+    plt.title(f'{net.__name__}', fontsize=12, y=1.08)
+    plt.xticks([])
+    plt.yticks([])
+    for idx in range(1, cols*rows+1):
+        x = np.random.rand(784, 1)
+        pred = net.predict(x)
+        img = pred.reshape((28, 28))
+        fig.add_subplot(rows, cols, idx)
+        plt.gray()
+        plt.imshow(img)
+        plt.xticks([])
+        plt.yticks([])
+    if save_plot:
+        plt.savefig(os.path.join(settings.FIGURES_DIR, f'{net.__name__}.png'))
+    plt.show()
 
 def predict_random_mnist(x, y, net, save_plot=False):
     cols = 3
