@@ -12,12 +12,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def load_mnist(train_set_size=1000, test_set_size=100):
+def load_mnist(train_set_size=1000, test_set_size=100, select_label=None):
     x_train, y_train = mnist.train_images(), mnist.train_labels()
     x_test, y_test = mnist.test_images(), mnist.test_labels()
-    x_train = x_train[0:train_set_size]
+    if isinstance(select_label, int):
+        x_train = x_train[np.where(y_train == select_label)]
+        x_test = x_test[np.where(y_test == select_label)]
+        y_train = y_train[np.where(y_train == select_label)]
+        y_test = y_test[np.where(y_test == select_label)]
+        train_set_size = y_train.size
+        test_set_size = y_test.size
+    x_train = x_train[0:train_set_size]/255
     y_train = y_train[0:train_set_size]
-    x_test = x_test[0:test_set_size]
+    x_test = x_test[0:test_set_size]/255
     y_test = y_test[0:test_set_size]
     x_train = np.moveaxis(x_train, 0, -1)
     x_train = x_train.reshape(28*28, train_set_size)
@@ -34,8 +41,10 @@ def plot_random_mnist_autoencoder(net, save_plot=False):
     plt.title(f'{net.__name__}', fontsize=12, y=1.08)
     plt.xticks([])
     plt.yticks([])
+    input_layer = net.layers[0]
+    input_size = input_layer.shape[1]
     for idx in range(1, cols*rows+1):
-        x = np.random.rand(784, 1)
+        x = np.random.rand(input_size, 1)
         pred = net.predict(x)
         img = pred.reshape((28, 28))
         fig.add_subplot(rows, cols, idx)

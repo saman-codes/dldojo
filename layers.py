@@ -39,7 +39,7 @@ class Layer():
                     self.weights = np.zeros(self.shape)
                 elif weight_init == 'ones':
                     self.weights = np.ones(self.shape)
-
+            if self.is_trainable:
                 self.gradient = np.zeros_like(self.weights)
 
             else:
@@ -101,7 +101,18 @@ class Output(Layer):
         return
 
 class Dropout(Layer):
+    
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        p = kwargs.get('p', 0.5)
         self.is_trainable = False
+        self.p = p 
         return
+
+    def forward(self, x):
+        dropout_mask = np.random.choice([0,1], p=[1-self.p, self.p], size=self.wx.shape)
+        self.out = x
+        return self.out @ dropout_mask
+
+    def backward(self, next_layer):
+        pass
