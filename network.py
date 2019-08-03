@@ -56,26 +56,32 @@ class Network():
                 output = self.predict(minibatch_x)
                 loss = self.loss(output, minibatch_y).sum()
                 self.training_loss.append((epoch, loss))
+                
                 if verbose:
                     logging.info(f'Training loss: {loss}')
+
                 for layer in reversed(self.layers):
                     if layer.is_output_layer:
                         dwx = layer.activation.derivative(layer.wx)
                         if isinstance(self.loss, CrossEntropy):
+                            '''
+                            TODO: implement CE loss for all activations, not just sigmoid
+                            I think the dwx term become 1 only with sigmoid activation
+                            in the output layer
+                            '''
                             # CrossEntropy loss cancels out the sigma' term
                             dwx = 1
                         layer.error = self.loss.output_gradient(
                             output, minibatch_y) * dwx
                     else:
-                        next_layer.gradient = layer.backward(next_layer)
-                        # Update weights
-                        next_layer.weights -= learning_rate/batch_size * next_layer.gradient
-                        # Update bias (sum error over batches)
-                        if next_layer.use_bias:
-                            next_layer.bias -= learning_rate / \
-                                batch_size * next_layer.error.sum(axis=1)
+                        layer.backward(next_layer)
+                        next_layer.update_weights(learning_rate, batch_size)
                     next_layer = layer
+                # Update weights for input layer
+                layer.gradient = layer.error.dot(layer.x.T)
+                layer.update_weights(learning_rate, batch_size)
                 idx += batch_size
+
         if plot_loss:
             plt.plot([i[0] for i in self.training_loss], [i[1] for i in self.training_loss])
             plt.show()

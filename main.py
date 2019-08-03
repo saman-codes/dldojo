@@ -1,14 +1,14 @@
 # Local
 from network import Network
 from losses import MSE, CrossEntropy
-from layers import Feedforward, Output, Dropout
+from layers import Feedforward, Output, Dropout, Input
 from utils import load_mnist, predict_random_mnist, get_accuracy_mnist, plot_weights, plot_random_mnist_autoencoder
 # Thirdparty
 import numpy as np
 
 def run_autoencoder():
     x_train, _, _, _ = load_mnist(
-        train_set_size=60000, test_set_size=0, select_label=1)
+        train_set_size=60000, test_set_size=0, select_label=0)
     ins = 784
     os = 784
     bs = 5000
@@ -25,7 +25,7 @@ def run_autoencoder():
     net.add(Output(shape=(os, 250), activation='sigmoid',
                    use_bias=True, bias_init='zeros', weight_init='normal'))
     net.train(x_train,  x_train, loss, batch_size=bs, learning_rate=5,
-              epochs=100, verbose=False, plot_loss=True)
+              epochs=25, verbose=False, plot_loss=True)
     
     get_accuracy_mnist(x_train, x_train, net)
     plot_weights(net)
@@ -45,12 +45,13 @@ def run_feedforward():
     # loss = MSE()
     loss = CrossEntropy()
     net = Network()
-    net.set_name('SimpleFeedforward')
+    net.set_name('Simple Feedforward Network')
     net.add(Feedforward(shape=(hs, ins), activation='sigmoid',
                         use_bias=True, bias_init='zeros', weight_init='normal'))
-    net.add(Dropout())
+    # net.add(Dropout())
     net.add(Feedforward(shape=(hs, hs), activation='sigmoid',
                         use_bias=True, bias_init='zeros', weight_init='normal'))
+    # net.add(Dropout())
     net.add(Output(shape=(os, hs), activation='sigmoid',
                    use_bias=True, bias_init='zeros', weight_init='normal'))
     net.train(x_train,  y_train, loss, batch_size=bs, learning_rate=1,

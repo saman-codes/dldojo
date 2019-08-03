@@ -24,8 +24,8 @@ class Layer():
         self.use_bias = use_bias
         self.is_output_layer = False
         '''
-    TODO: Init-ing to None for now, change to an np.zeros with correct shape
-    '''
+        TODO: Init-ing to None for now, change to an np.zeros with correct shape
+        '''
         self.error = None
 
         def _init_weights():
@@ -39,6 +39,12 @@ class Layer():
                     self.weights = np.zeros(self.shape)
                 elif weight_init == 'ones':
                     self.weights = np.ones(self.shape)
+                elif weight_init == 'xavier':
+                    '''
+                    TODO: implement xavier initialisation
+                    '''
+                    self.weights = np.random.uniform(-1, 1, size=self.shape)
+            
             if self.is_trainable:
                 self.gradient = np.zeros_like(self.weights)
 
@@ -80,16 +86,38 @@ class Layer():
         return
 
     def forward(self, x):
+        self.x = x
         self.wx = self.weights.dot(x)
         self.out = self.activation(self.wx)
         return self.out
 
     def backward(self, next_layer):
+        '''
+        Calculate current layer error and next layer gradient
+        '''
         dwx = self.activation.derivative(self.wx)
         self.error = next_layer.weights.T.dot(next_layer.error) * dwx
-        next_layer_gradient = next_layer.error.dot(self.out.T)
-        return next_layer_gradient
+        next_layer.gradient = next_layer.error.dot(self.out.T)
+        return
+    
+    def update_weights(self, learning_rate, batch_size):
+        # Update weights
+        self.weights -= learning_rate/batch_size * self.gradient
+        # Update bias (average error over batches)
+        if self.use_bias:
+            self.bias -= learning_rate / \
+                batch_size * self.error.sum(axis=1)
+        return
 
+class Input(Layer):
+    def __init__(self, input_shape=None):
+        super().__init__( 
+                    shape=input_shape,
+                    activation='linear',
+                    weight_init='ones',
+                    use_bias=False,
+                    is_trainable=False)
+        return
 
 class Feedforward(Layer):
     pass
@@ -100,19 +128,41 @@ class Output(Layer):
         self.is_output_layer = True
         return
 
+class Convolutional(Layer):
+    pass
+
+class BatchNormalization(Layer):
+    pass
+
 class Dropout(Layer):
+    '''
+    This layer implements Inverted Dropout, which 
+    scales up the weights during training instead 
+    of scaling them down at test time
+    See: 
+    '''
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         p = kwargs.get('p', 0.5)
         self.is_trainable = False
+        # p = probability the neuron is active
         self.p = p 
+        self.weights = None
         return
 
     def forward(self, x):
-        dropout_mask = np.random.choice([0,1], p=[1-self.p, self.p], size=self.wx.shape)
-        self.out = x
-        return self.out @ dropout_mask
+        self.dropout_mask = np.zeros_like(x)
+        idx = np.random.sample(x.shape[0])
+        idx[idx>=(1-self.p)] = 1
+        idx = np.where(idx == 1)
+        self.dropout_mask[idx] = 1/self.p
+        self.out =  x * self.dropout_mask
+        return self.out 
 
     def backward(self, next_layer):
         pass
+
+        
+
+        
