@@ -53,7 +53,7 @@ class Network():
                     # If remaining data is less than size of minibatch, take all remaining data
                     minibatch_x = x[:, idx:]
                     minibatch_y = y[:, idx:]
-                output = self.predict(minibatch_x)
+                output = self.train_predict(minibatch_x)
                 loss = self.loss(output, minibatch_y).sum()
                 self.training_loss.append((epoch, loss))
                 
@@ -73,27 +73,31 @@ class Network():
                             dwx = 1
                         layer.error = self.loss.output_gradient(
                             output, minibatch_y) * dwx
+                        layer.gradient = layer.error.dot(layer.x.T)
+                    
                     else:
                         layer.backward(next_layer)
-                        next_layer.update_weights(learning_rate, batch_size)
+                    layer.update_weights(learning_rate, batch_size)
                     next_layer = layer
-                # Update weights for input layer
-                layer.gradient = layer.error.dot(layer.x.T)
-                layer.update_weights(learning_rate, batch_size)
                 idx += batch_size
 
         if plot_loss:
             plt.plot([i[0] for i in self.training_loss], [i[1] for i in self.training_loss])
             plt.show()
 
-    def predict(self, x):
+    def test_predict(self, x):
+        return self.train_predict(x, runtime='test')
+
+
+    def train_predict(self, x, **kwargs):
+        runtime = kwargs.get('runtime', 'train')
         # Get output shape from last layer
         os = self.layers[-1].shape
         output = np.empty(os)
         input_layer = self.layers[0]
-        output = input_layer.forward(x)
+        output = input_layer.forward(x, runtime)
         for layer in self.layers[1:]:
-            output = layer.forward(output)
+            output = layer.forward(output, runtime)
         return output
 
     def add(self, layer):

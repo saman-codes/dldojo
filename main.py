@@ -1,7 +1,7 @@
 # Local
 from network import Network
 from losses import MSE, CrossEntropy
-from layers import Feedforward, Output, Dropout, Input
+from layers import Feedforward, Output
 from utils import load_mnist, predict_random_mnist, get_accuracy_mnist, plot_weights, plot_random_mnist_autoencoder
 # Thirdparty
 import numpy as np
@@ -48,10 +48,8 @@ def run_feedforward():
     net.set_name('Simple Feedforward Network')
     net.add(Feedforward(shape=(hs, ins), activation='sigmoid',
                         use_bias=True, bias_init='zeros', weight_init='normal'))
-    # net.add(Dropout())
-    net.add(Feedforward(shape=(hs, hs), activation='sigmoid',
+    net.add(Feedforward(dropout=0.5, shape=(hs, hs), activation='sigmoid',
                         use_bias=True, bias_init='zeros', weight_init='normal'))
-    # net.add(Dropout())
     net.add(Output(shape=(os, hs), activation='sigmoid',
                    use_bias=True, bias_init='zeros', weight_init='normal'))
     net.train(x_train,  y_train, loss, batch_size=bs, learning_rate=1,

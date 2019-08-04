@@ -45,7 +45,7 @@ def plot_random_mnist_autoencoder(net, save_plot=False):
     input_size = input_layer.shape[1]
     for idx in range(1, cols*rows+1):
         x = np.random.rand(input_size, 1)
-        pred = net.predict(x)
+        pred = net.test_predict(x)
         img = pred.reshape((28, 28))
         fig.add_subplot(rows, cols, idx)
         plt.gray()
@@ -67,7 +67,7 @@ def predict_random_mnist(x, y, net, save_plot=False):
         s = x.shape[1]
         i = random.randint(0, s-1)
         img = x[:, i].reshape(28, 28)
-        pred = np.argmax(net.predict(x[:, i]))
+        pred = np.argmax(net.test_predict(x[:, i]))
         fig.add_subplot(rows, cols, idx)
         plt.gray()
         plt.imshow(img)
@@ -79,7 +79,7 @@ def predict_random_mnist(x, y, net, save_plot=False):
     plt.show()
 
 def get_accuracy_mnist(x, y, net):
-    y_pred = net.predict(x)
+    y_pred = net.test_predict(x)
     y_pred_scalar = np.argmax(y_pred, axis=0)
     y_scalar = np.argmax(y, axis=0)
     accuracy = np.sum(y_scalar == y_pred_scalar)/len(y_scalar)
