@@ -55,13 +55,13 @@ class Layer():
                 raise Exception
 
         def _init_bias():
-            bias_shape = (self.shape[0], )
+            bias_shape = (self.shape[0], 1)
             self.bias = np.zeros(bias_shape)
             if use_bias and bias_init in ['uniform', 'normal', 'zeros', 'ones']:
                 if bias_init == 'uniform':
                     self.bias = np.random.uniform(-1, 1, size=bias_shape)
                 elif bias_init == 'normal':
-                    self.bias = np.random.randn(bias_shape[0], )
+                    self.bias = np.random.randn(*bias_shape)
                 elif bias_init == 'zeros':
                     self.bias = np.zeros(bias_shape)
                 elif bias_init == 'ones':
@@ -92,10 +92,7 @@ class Layer():
         self.x = x
         self.wx = self.weights.dot(x)
         if self.use_bias:
-            try:
-                self.wx += self.bias 
-            except:
-                self.wx += self.bias.reshape(-1,1).dot(np.ones((1,self.wx.shape[1])))
+            self.wx += self.bias.dot(np.ones((1,self.wx.shape[1])))
         self.out = self.activation(self.wx)
         if self.add_dropout and runtime is 'train':
             self._set_dropout_mask()
@@ -107,10 +104,10 @@ class Layer():
         Calculate current layer error and next layer gradient
         '''
         dwx = self.activation.derivative(self.wx)
+        if self.add_dropout:
+            dwx *= self.dropout_mask
         self.error = next_layer.weights.T.dot(next_layer.error) * dwx
         self.gradient = self.error.dot(self.x.T)
-        if self.add_dropout:
-            self.gradient *= self.dropout_mask[:,self.gradient.shape[1]]
         return
     
     def update_weights(self, learning_rate, batch_size):
@@ -119,8 +116,7 @@ class Layer():
             self.weights -= learning_rate/batch_size * self.gradient
             # Update bias (average error over batches)
             if self.use_bias:
-                self.bias -= learning_rate / \
-                    batch_size * self.error.sum(axis=1)
+                self.bias -= learning_rate/batch_size * self.error.sum(axis=1, keepdims=True)
         return
 
     def _set_dropout_mask(self):

@@ -49,16 +49,16 @@ class Linear(Activation):
 class Sigmoid(Activation):
 
     def __call__(self, x):
-        return 1/(1+np.nan_to_num((np.exp(-x))))
+        return 1./(1.+np.nan_to_num((np.exp(-x))))
 
     def derivative(self, x):
-        return self.__call__(x)*(1-self.__call__(x))
+        return self.__call__(x)*(1.-self.__call__(x))
 
 
 class Softmax(Activation):
 
     def __call__(self, x):
-        return np.exp(x) / np.exp(x).sum(axis=0)
+        return np.exp(x) / np.exp(x).sum(axis=0, keepdims=True)
 
     def derivative(self, x):
-        return
+        return 

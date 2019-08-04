@@ -74,7 +74,6 @@ class Network():
                         layer.error = self.loss.output_gradient(
                             output, minibatch_y) * dwx
                         layer.gradient = layer.error.dot(layer.x.T)
-                    
                     else:
                         layer.backward(next_layer)
                     layer.update_weights(learning_rate, batch_size)

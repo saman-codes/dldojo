@@ -37,7 +37,7 @@ def run_autoencoder():
 
 def run_feedforward():
     x_train, y_train, x_test, y_test = load_mnist(
-        train_set_size=10000, test_set_size=1000)
+        train_set_size=60000, test_set_size=10000)
     ins = 784
     os = 10
     hs = 100
@@ -47,6 +47,8 @@ def run_feedforward():
     net = Network()
     net.set_name('Simple Feedforward Network')
     net.add(Feedforward(shape=(hs, ins), activation='sigmoid',
+                        use_bias=True, bias_init='zeros', weight_init='normal'))
+    net.add(Feedforward(dropout=0.5, shape=(hs, hs), activation='sigmoid',
                         use_bias=True, bias_init='zeros', weight_init='normal'))
     net.add(Feedforward(dropout=0.5, shape=(hs, hs), activation='sigmoid',
                         use_bias=True, bias_init='zeros', weight_init='normal'))

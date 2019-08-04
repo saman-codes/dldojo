@@ -67,7 +67,7 @@ def predict_random_mnist(x, y, net, save_plot=False):
         s = x.shape[1]
         i = random.randint(0, s-1)
         img = x[:, i].reshape(28, 28)
-        pred = np.argmax(net.test_predict(x[:, i]))
+        pred = np.argmax(net.test_predict(x[:, i].reshape(-1,1)))
         fig.add_subplot(rows, cols, idx)
         plt.gray()
         plt.imshow(img)
