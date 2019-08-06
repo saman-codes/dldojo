@@ -61,4 +61,5 @@ class Softmax(Activation):
         return np.exp(x) / np.exp(x).sum(axis=0, keepdims=True)
 
     def derivative(self, x):
-        return 
+        # Softmax derivative not used when CrossEntropy loss is used
+        return

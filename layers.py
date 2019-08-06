@@ -18,26 +18,26 @@ class Layer():
                  use_bias=True,
                  bias_init='zeros',
                  is_trainable=True,
-                 dropout=1.):
-        
+                 dropout=1.,
+                 flatten=False):
+
         self.is_trainable = is_trainable
         self.shape = shape
         self.use_bias = use_bias
         self.add_dropout = bool(dropout < 1.)
         self.dropout_p = dropout
+        self.flatten = flatten
         self.is_output_layer = False
         '''
         TODO: Init-ing to None for now, change to an np.zeros with correct shape
         '''
         self.error = None
-
         def _init_weights():
             if weight_init in ['xavier', 'uniform', 'normal', 'zeros', 'ones']:
                 if weight_init == 'uniform':
                     self.weights = np.random.uniform(-1, 1, size=self.shape)
                 elif weight_init == 'normal':
-                    self.weights = np.random.randn(
-                        self.shape[0], self.shape[1])
+                    self.weights = np.random.randn(*self.shape)
                 elif weight_init == 'zeros':
                     self.weights = np.zeros(self.shape)
                 elif weight_init == 'ones':
@@ -47,7 +47,7 @@ class Layer():
                     TODO: implement xavier initialisation
                     '''
                     self.weights = np.random.uniform(-1, 1, size=self.shape)
-            
+
             if self.is_trainable:
                 self.gradient = np.zeros_like(self.weights)
 
@@ -78,7 +78,7 @@ class Layer():
                 elif activation == 'sigmoid':
                     self.activation = Sigmoid()
                 elif activation == 'softmax':
-                    self.activation == Softmax()
+                    self.activation = Softmax()
             else:
                 raise Exception
 
@@ -89,19 +89,21 @@ class Layer():
         return
 
     def forward(self, x, runtime='train'):
+        if self.flatten:
+            x = x.reshape(-1, 1)
         self.x = x
         self.wx = self.weights.dot(x)
         if self.use_bias:
             self.wx += self.bias.dot(np.ones((1,self.wx.shape[1])))
         self.out = self.activation(self.wx)
-        if self.add_dropout and runtime is 'train':
+        if self.add_dropout and runtime == 'train':
             self._set_dropout_mask()
             self.out *= self.dropout_mask
         return self.out
 
     def backward(self, next_layer):
         '''
-        Calculate current layer error and next layer gradient
+        Calculate current layer error and gradient
         '''
         dwx = self.activation.derivative(self.wx)
         if self.add_dropout:
@@ -109,7 +111,7 @@ class Layer():
         self.error = next_layer.weights.T.dot(next_layer.error) * dwx
         self.gradient = self.error.dot(self.x.T)
         return
-    
+
     def update_weights(self, learning_rate, batch_size):
         if self.is_trainable:
             # Update weights
@@ -134,7 +136,17 @@ class Output(Layer):
         return
 
 class Convolutional(Layer):
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Check that layer has at least 3 dimensions
+        assert(len(self.shape) > 2)
+        return
+
+    def forward():
+        return
+
+    def backward():
+        return
 
 class BatchNormalization(Layer):
     pass

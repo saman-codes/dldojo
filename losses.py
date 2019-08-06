@@ -5,7 +5,6 @@ class Loss():
     def output_gradient(self):
         return
 
-
 class MSE(Loss):
     def __call__(self, predicted, labels):
         return 0.5 * np.square(predicted - labels)

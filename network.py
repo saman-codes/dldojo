@@ -1,4 +1,5 @@
 # Standard Python
+import copy
 import logging
 
 # Local
@@ -21,28 +22,38 @@ class Network():
     def __init__(self):
         '''
         TODO: implement: layers stored in a dictionary, defining a computation graph
-        self.layers = {}  
+        self.layers = {}
         For now, store in a list
         '''
         self.__name__ = 'GenericNetwork'
         self.layers = []
-    
+
     def set_name(self, name):
         self.__name__ = name
 
-    def train(self, x, y, loss, batch_size=1, epochs=100, learning_rate=5e-4, verbose=True, plot_loss=True):
+    def train(self, x, y, loss,
+                batch_size=1, epochs=100, learning_rate=5e-4,
+                regularizer=None, verbose=True, plot_loss=True,
+                shuffle_data=True, gradient_check=False
+            ):
         '''
         First implement a forward pass and store the weighted products and activations
         Then implement a backward pass, computing the gradient for each weight matrix
-        and adjusting the weights using gradient descent 
+        and adjusting the weights using gradient descent
         '''
         self.loss = loss
         self.training_loss = []
-        data_size = x.shape[1]
-        # Shuffle the original data
-        s = np.random.permutation(data_size)
-        x = x[:, s]
-        y = y[:, s]
+        if regularizer is not None:
+            assert(isinstance(regularizer, tuple))
+            self.regularizer, self.reg_lambda = regularizer
+        else:
+            self.regularizer = regularizer
+        if shuffle_data:
+            data_size = x.shape[1]
+            # Shuffle the original data
+            s = np.random.permutation(data_size)
+            x = x[:, s]
+            y = y[:, s]
         for epoch in tqdm(range(epochs)):
             idx = 0
             while idx < data_size:
@@ -56,7 +67,7 @@ class Network():
                 output = self.train_predict(minibatch_x)
                 loss = self.loss(output, minibatch_y).sum()
                 self.training_loss.append((epoch, loss))
-                
+
                 if verbose:
                     logging.info(f'Training loss: {loss}')
 
@@ -76,7 +87,13 @@ class Network():
                         layer.gradient = layer.error.dot(layer.x.T)
                     else:
                         layer.backward(next_layer)
-                    layer.update_weights(learning_rate, batch_size)
+                    if self.regularizer:
+                        self._add_regularization_term(layer)
+                    if gradient_check:
+                        self._check_gradient(minibatch_x, minibatch_y, layer)
+                    else:
+                        # Do not update the weights if checking the gradients
+                        layer.update_weights(learning_rate, batch_size)
                     next_layer = layer
                 idx += batch_size
 
@@ -84,15 +101,40 @@ class Network():
             plt.plot([i[0] for i in self.training_loss], [i[1] for i in self.training_loss])
             plt.show()
 
+    def _check_gradient(self, x, y, layer):
+        epsilon = 1e-5
+        for i in range(layer.shape[0]):
+            for j in range(layer.shape[1]):
+                actual_output = self.test_predict(x)
+                actual_loss = self.loss(actual_output, y)
+                layer.weights[i,j] += epsilon
+                output_plus = self.test_predict(x)
+                loss_plus = self.loss(output_plus, y)
+                layer.weights[i,j] -= 2*epsilon
+                output_minus = self.test_predict(x)
+                loss_minus = self.loss(output_minus, y)
+                gradient = ((loss_plus - loss_minus)/(2*epsilon)).sum()
+                backprop_gradient = layer.gradient[i,j]
+                if not np.isclose(backprop_gradient, gradient, rtol=1e-5):
+                    raise Exception(f"Computed gradient is not correct for layer {layer}")
+                # Reset weights
+                layer.weights[i,j] += epsilon
+        logging.info(f'All computed gradients are correct for layer {layer}')
+
+    def _add_regularization_term(self, layer):
+        if self.regularizer == 'L2':
+            # Derivative of the squared weights, so we lose the power of 2
+            d_reg_term = layer.weights
+        layer.gradient += self.reg_lambda * d_reg_term/d_reg_term.size
+        return
+
     def test_predict(self, x):
         return self.train_predict(x, runtime='test')
-
 
     def train_predict(self, x, **kwargs):
         runtime = kwargs.get('runtime', 'train')
         # Get output shape from last layer
         os = self.layers[-1].shape
-        output = np.empty(os)
         input_layer = self.layers[0]
         output = input_layer.forward(x, runtime)
         for layer in self.layers[1:]:
