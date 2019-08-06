@@ -36,24 +36,26 @@ def run_autoencoder():
 
 
 def run_feedforward():
-    x_train, y_train, x_test, y_test = load_mnist(
-        train_set_size=10, test_set_size=1)
-    ins = 784
-    os = 10
-    hs = 100
-    bs = 10
+    # x_train, y_train, x_test, y_test = load_mnist(
+    #     train_set_size=10, test_set_size=1)
+    ins = 1
+    os = 2
+    hs = 2
+    bs = 1
+    x_train = np.ones((ins, 1))
+    y_train = np.ones((os, 1))
     loss = MSE()
     # loss = CrossEntropy()
     net = Network()
     net.set_name('Simple Feedforward Network')
     net.add(Feedforward(shape=(hs, ins), activation='sigmoid',
-                        use_bias=False, bias_init='zeros', weight_init='normal'))
-    net.add(Feedforward(shape=(hs, hs), activation='sigmoid',
-                        use_bias=True, bias_init='zeros', weight_init='normal'))
+                        use_bias=True, bias_init='normal', weight_init='normal'))
+    # net.add(Feedforward(shape=(hs, hs), activation='sigmoid',
+    #                     use_bias=True, bias_init='normal', weight_init='normal'))
     net.add(Output(shape=(os, hs), activation='sigmoid',
-                   use_bias=False, bias_init='zeros', weight_init='normal'))
+                   use_bias=True, bias_init='normal', weight_init='normal'))
     # net.train(x_train,  y_train, loss, batch_size=bs, learning_rate=1,
-    #           epochs=100, regularizer=('L2', 0.3), verbose=False, plot_loss=False)
+    #           epochs=100, regularizer=('L2', 0.3), verbose=True, plot_loss=False)
     net.train(x_train,  y_train, loss, gradient_check=True, batch_size=bs, learning_rate=1,
               epochs=1, plot_loss=False)
     # get_accuracy_mnist(x_test, y_test, net)

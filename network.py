@@ -105,8 +105,6 @@ class Network():
         epsilon = 1e-5
         for i in range(layer.shape[0]):
             for j in range(layer.shape[1]):
-                actual_output = self.test_predict(x)
-                actual_loss = self.loss(actual_output, y)
                 layer.weights[i,j] += epsilon
                 output_plus = self.test_predict(x)
                 loss_plus = self.loss(output_plus, y)
@@ -119,6 +117,19 @@ class Network():
                     raise Exception(f"Computed gradient is not correct for layer {layer}")
                 # Reset weights
                 layer.weights[i,j] += epsilon
+        if layer.use_bias:
+            for i in range(len(layer.bias)):
+                layer.bias[i,0] += epsilon
+                output_plus = self.test_predict(x)
+                loss_plus = self.loss(output_plus, y)
+                layer.bias[i,0] -= 2*epsilon
+                output_minus = self.test_predict(x)
+                loss_minus = self.loss(output_minus, y)
+                gradient = ((loss_plus - loss_minus)/(2*epsilon)).sum()
+                backprop_gradient = layer.error[i].sum()
+                if not np.isclose(backprop_gradient, gradient, rtol=1e-5):
+                    raise Exception(f"Computed gradient is not correct for bias in layer {layer}")
+                layer.bias[i,0] += epsilon
         logging.info(f'All computed gradients are correct for layer {layer}')
 
     def _add_regularization_term(self, layer):
