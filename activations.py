@@ -20,8 +20,10 @@ class Relu(Activation):
     def __call__(self, x):
         return np.maximum(0, x)
 
-    def derivative(self, x):
-        return self.__call__(x) / x
+    def derivative(self, x): 
+        x[x>=0] = 1
+        x[x<1] = 0
+        return x
 
 
 class LeakyRelu(Activation):
@@ -34,7 +36,9 @@ class LeakyRelu(Activation):
         return np.maximum(self.mu*x, x)
 
     def derivative(self, x):
-        return (np.maximum(0, x) / x) * self.mu
+        x[x>=0] = 1
+        x[x<1] = self.mu
+        return x
 
 
 class Linear(Activation):

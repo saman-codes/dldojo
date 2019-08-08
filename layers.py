@@ -110,6 +110,7 @@ class Layer():
             dwx *= self.dropout_mask
         self.error = next_layer.weights.T.dot(next_layer.error) * dwx
         self.gradient = self.error.dot(self.x.T)
+        self.bias_gradient = self.error.sum(axis=1, keepdims=True)
         return
 
     def update_weights(self, learning_rate, batch_size):
@@ -118,7 +119,7 @@ class Layer():
             self.weights -= learning_rate/batch_size * self.gradient
             # Update bias (average error over batches)
             if self.use_bias:
-                self.bias -= learning_rate/batch_size * self.error.sum(axis=1, keepdims=True)
+                self.bias -= learning_rate/batch_size * self.bias_gradient
         return
 
     def _set_dropout_mask(self):

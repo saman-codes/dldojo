@@ -26,42 +26,51 @@ def run_autoencoder():
                    use_bias=True, bias_init='zeros', weight_init='normal'))
     net.train(x_train,  x_train, loss, batch_size=bs, learning_rate=5,
               epochs=25, verbose=False, plot_loss=True)
-
-    get_accuracy_mnist(x_train, x_train, net)
     plot_weights(net)
     generator = Network()
     generator.set_name('Generator')
     generator.layers = net.layers[2:]
     plot_random_mnist_autoencoder(generator)
 
-
-def run_feedforward():
-    # x_train, y_train, x_test, y_test = load_mnist(
-    #     train_set_size=10, test_set_size=1)
-    ins = 1
-    os = 2
-    hs = 2
-    bs = 1
-    x_train = np.ones((ins, 1))
-    y_train = np.ones((os, 1))
-    loss = MSE()
-    # loss = CrossEntropy()
+def run_feedforward_gradient_checking():
+    bs = 10
+    ins = 784
+    os = 10
+    hs = 10
+    x_train, y_train, _, _ = load_mnist(train_set_size=bs, test_set_size=0)
+    # loss = MSE()
+    loss = CrossEntropy()
     net = Network()
-    net.set_name('Simple Feedforward Network')
-    net.add(Feedforward(shape=(hs, ins), activation='sigmoid',
+    net.add(Feedforward(shape=(hs, ins), activation='relu',
                         use_bias=True, bias_init='normal', weight_init='normal'))
-    # net.add(Feedforward(shape=(hs, hs), activation='sigmoid',
+    # net.add(Feedforward(shape=(hs, hs), activation='relu',
     #                     use_bias=True, bias_init='normal', weight_init='normal'))
     net.add(Output(shape=(os, hs), activation='sigmoid',
                    use_bias=True, bias_init='normal', weight_init='normal'))
-    # net.train(x_train,  y_train, loss, batch_size=bs, learning_rate=1,
-    #           epochs=100, regularizer=('L2', 0.3), verbose=True, plot_loss=False)
     net.train(x_train,  y_train, loss, gradient_check=True, batch_size=bs, learning_rate=1,
               epochs=1, plot_loss=False)
-    # get_accuracy_mnist(x_test, y_test, net)
-    # plot_weights(net)
-    # predict_random_mnist(x_test, y_test, net, save_plot=True)
 
+def run_feedforward():
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    ins = 784
+    os = 10
+    hs = 100
+    bs = 1000
+    # loss = MSE()
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('Simple Feedforward Network')
+    net.add(Feedforward(shape=(hs, ins), activation='relu',
+                        use_bias=True, bias_init='normal', weight_init='normal'))
+    net.add(Feedforward(shape=(hs, hs), activation='relu',
+                        use_bias=True, bias_init='normal', weight_init='normal'))
+    net.add(Output(shape=(os, hs), activation='sigmoid',
+                   use_bias=True, bias_init='normal', weight_init='normal'))
+    net.train(x_train,  y_train, loss, batch_size=bs, learning_rate=1e-3,
+              epochs=100, regularizer=('L2', 0.3), verbose=False, plot_loss=False)
+    get_accuracy_mnist(x_test, y_test, net)
+    plot_weights(net)
+    predict_random_mnist(x_test, y_test, net, save_plot=True)
 
 def run_cnn():
     x_train, y_train, x_test, y_test = load_mnist(
@@ -88,6 +97,7 @@ def run_cnn():
 
 if __name__ == '__main__':
     # run_autoencoder()
-    run_feedforward()
+    # run_feedforward()
+    run_feedforward_gradient_checking()
     # run_cnn()
 
