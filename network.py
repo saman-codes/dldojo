@@ -65,7 +65,7 @@ class Network():
                     minibatch_x = x[:, idx:]
                     minibatch_y = y[:, idx:]
                 output = self.train_predict(minibatch_x)
-                loss = self.loss(output, minibatch_y).sum()
+                loss = self.loss(output, minibatch_y).mean()
                 self.training_loss.append((epoch, loss))
 
                 if verbose:
@@ -103,7 +103,7 @@ class Network():
             plt.show()
 
     def _check_gradient(self, x, y, layer):
-        epsilon = 1e-5
+        epsilon = 1e-10
         for i in tqdm(range(layer.shape[0])):
             for j in range(layer.shape[1]):
                 layer.weights[i,j] += epsilon
@@ -115,7 +115,9 @@ class Network():
                 raw_gradient = ((loss_plus - loss_minus)/(2*epsilon))
                 gradient = ((loss_plus - loss_minus)/(2*epsilon)).sum()
                 backprop_gradient = layer.gradient[i,j]
-                if not np.isclose(backprop_gradient, gradient, rtol=1):
+                grad_rel_diff = (gradient-backprop_gradient)/(np.absolute(gradient) + np.absolute(backprop_gradient) + 1)
+                # if not np.isclose(grad_rel_diff, 0.0, rtol=1e-5):
+                if not grad_rel_diff < 1e-5:
                     raise Exception(f"Computed gradient is not correct for layer {layer}")
                 # Reset weights
                 layer.weights[i,j] += epsilon
@@ -129,8 +131,10 @@ class Network():
                 loss_minus = self.loss(output_minus, y)
                 raw_gradient = ((loss_plus - loss_minus)/(2*epsilon))
                 gradient = ((loss_plus - loss_minus)/(2*epsilon)).sum()
-                backprop_gradient = layer.bias_gradient[i]
-                if not np.isclose(backprop_gradient, gradient, rtol=1e-5):
+                backprop_gradient = layer.bias_gradient[i].sum()
+                grad_rel_diff = (gradient-backprop_gradient)/(np.absolute(gradient) + np.absolute(backprop_gradient) + 1)
+                # if not np.isclose(grad_rel_diff, 0.0, rtol=1e-5):
+                if not grad_rel_diff < 1e-5:
                     raise Exception(f"Computed gradient is not correct for bias in layer {layer}")
                 layer.bias[i,0] += epsilon
         logging.info(f'All computed gradients are correct for layer {layer}')

@@ -19,7 +19,8 @@ class Layer():
                  bias_init='zeros',
                  is_trainable=True,
                  dropout=1.,
-                 flatten=False):
+                 flatten=False,
+                 minmax_scaling=False):
 
         self.is_trainable = is_trainable
         self.shape = shape
@@ -27,6 +28,7 @@ class Layer():
         self.add_dropout = bool(dropout < 1.)
         self.dropout_p = dropout
         self.flatten = flatten
+        self.minmax_scaling = minmax_scaling
         self.is_output_layer = False
         '''
         TODO: Init-ing to None for now, change to an np.zeros with correct shape
@@ -92,7 +94,9 @@ class Layer():
         if self.flatten:
             x = x.reshape(-1, 1)
         self.x = x
-        self.wx = self.weights.dot(x)
+        if self.minmax_scaling:
+            self.x = np.divide((x - np.amin(x)),(np.amax(x) - np.amin(x)))
+        self.wx = self.weights.dot(self.x)
         if self.use_bias:
             self.wx += self.bias.dot(np.ones((1,self.wx.shape[1])))
         self.out = self.activation(self.wx)

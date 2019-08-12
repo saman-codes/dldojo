@@ -1,3 +1,6 @@
+# Standard Python
+import copy
+
 # Thirdparty
 import numpy as np
 
@@ -18,12 +21,10 @@ class Activation():
 class Relu(Activation):
 
     def __call__(self, x):
-        return np.maximum(0, x)
+        return np.absolute(x * (x > 0))
 
-    def derivative(self, x): 
-        x[x>=0] = 1
-        x[x<1] = 0
-        return x
+    def derivative(self, x):
+        return np.absolute(1. * (x > 0))
 
 
 class LeakyRelu(Activation):
