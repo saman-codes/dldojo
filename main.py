@@ -33,22 +33,22 @@ def run_autoencoder():
     plot_random_mnist_autoencoder(generator)
 
 def run_feedforward_gradient_checking():
-    bs = 1
+    bs = 10
     ins = 784
     os = 10
     hs = 10
     x_train, y_train, _, _ = load_mnist(train_set_size=bs, test_set_size=0)
     # x_train = np.random.random((ins, bs))
-    # y_train = np.ones((ins, bs))*10
+    # y_train = np.ones((os, bs))
     # loss = MSE()
     loss = CrossEntropy()
     net = Network()
     net.add(Feedforward(shape=(hs, ins), activation='relu',
-                        use_bias=True, bias_init='normal', weight_init='normal'))
+                        use_bias=True, bias_init='normal', weight_init='zeros'))
     # net.add(Feedforward(shape=(hs, hs), activation='relu',
     #                     use_bias=True, bias_init='normal', weight_init='normal'))
     net.add(Output(shape=(os, hs), activation='sigmoid',
-                   use_bias=True, bias_init='normal', weight_init='normal'))
+                   use_bias=True, bias_init='normal', weight_init='zeros'))
     net.train(x_train,  y_train, loss, gradient_check=True, batch_size=bs, learning_rate=1,
               epochs=1, plot_loss=False)
 
@@ -63,13 +63,13 @@ def run_feedforward():
     net = Network()
     net.set_name('Simple Feedforward Network')
     net.add(Feedforward(shape=(hs, ins), activation='sigmoid',
-                        use_bias=True, bias_init='normal', weight_init='normal',
+                        use_bias=True, bias_init='glorot_uniform', weight_init='glorot_uniform',
                         minmax_scaling=False))
     net.add(Feedforward(shape=(hs, hs), activation='sigmoid',
-                        use_bias=True, bias_init='normal', weight_init='normal',
+                        use_bias=True, bias_init='glorot_uniform', weight_init='glorot_uniform',
                         minmax_scaling=False))
     net.add(Output(shape=(os, hs), activation='sigmoid',
-                   use_bias=True, bias_init='normal', weight_init='normal',
+                   use_bias=True, bias_init='glorot_uniform', weight_init='glorot_uniform',
                    minmax_scaling=False))
     net.train(x_train,  y_train, loss, batch_size=bs, learning_rate=1e-3,
               epochs=100, regularizer=('L2', 0.3), verbose=False, plot_loss=False)

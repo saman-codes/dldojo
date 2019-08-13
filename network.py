@@ -103,7 +103,7 @@ class Network():
             plt.show()
 
     def _check_gradient(self, x, y, layer):
-        epsilon = 1e-10
+        epsilon = 1e-6
         for i in tqdm(range(layer.shape[0])):
             for j in range(layer.shape[1]):
                 layer.weights[i,j] += epsilon

@@ -1,4 +1,5 @@
 # Local
+import settings
 from activations import Linear, Sigmoid, Relu, LeakyRelu, Softmax
 
 # Thirdparty
@@ -35,7 +36,7 @@ class Layer():
         '''
         self.error = None
         def _init_weights():
-            if weight_init in ['xavier', 'uniform', 'normal', 'zeros', 'ones']:
+            if weight_init in settings.WEIGHTS_INITIALIZERS:
                 if weight_init == 'uniform':
                     self.weights = np.random.uniform(-1, 1, size=self.shape)
                 elif weight_init == 'normal':
@@ -44,11 +45,19 @@ class Layer():
                     self.weights = np.zeros(self.shape)
                 elif weight_init == 'ones':
                     self.weights = np.ones(self.shape)
-                elif weight_init == 'xavier':
-                    '''
-                    TODO: implement xavier initialisation
-                    '''
-                    self.weights = np.random.uniform(-1, 1, size=self.shape)
+                elif weight_init == 'glorot_normal':
+                    sigma = np.sqrt(2/(self.shape[0] + self.shape[1]))
+                    self.weights = np.random.randn(*self.shape) * sigma
+                elif weight_init == 'glorot_uniform':
+                    limit = np.sqrt(6/(self.shape[0] + self.shape[1]))
+                    self.weights = np.random.uniform(-limit, +limit, self.shape)
+                elif weight_init == 'he_normal':
+                    sigma = np.sqrt(2/(self.shape[1]))
+                    self.weights = np.random.randn(*self.shape) * sigma
+                elif weight_init == 'he_uniform':
+                    limit = np.sqrt(6/(self.shape[1]))
+                    self.weights = np.random.uniform(-limit, +limit, self.shape)
+
 
             if self.is_trainable:
                 self.gradient = np.zeros_like(self.weights)
@@ -59,7 +68,7 @@ class Layer():
         def _init_bias():
             bias_shape = (self.shape[0], 1)
             self.bias = np.zeros(bias_shape)
-            if use_bias and bias_init in ['uniform', 'normal', 'zeros', 'ones']:
+            if use_bias and bias_init in settings.WEIGHTS_INITIALIZERS:
                 if bias_init == 'uniform':
                     self.bias = np.random.uniform(-1, 1, size=bias_shape)
                 elif bias_init == 'normal':
@@ -68,6 +77,18 @@ class Layer():
                     self.bias = np.zeros(bias_shape)
                 elif bias_init == 'ones':
                     self.bias = np.ones(bias_shape)
+                elif weight_init == 'glorot_normal':
+                    sigma = np.sqrt(2/(self.shape[0] + self.shape[1]))
+                    self.weights = np.random.randn(*self.shape) * sigma
+                elif weight_init == 'glorot_uniform':
+                    limit = np.sqrt(6/(self.shape[0] + self.shape[1]))
+                    self.weights = np.random.uniform(-limit, +limit, self.shape)
+                elif weight_init == 'he_normal':
+                    sigma = np.sqrt(2/(self.shape[1]))
+                    self.weights = np.random.randn(*self.shape) * sigma
+                elif weight_init == 'he_uniform':
+                    limit = np.sqrt(6/(self.shape[1]))
+                    self.weights = np.random.uniform(-limit, +limit, self.shape)
 
         def _init_activation():
             if activation in ['relu', 'leaky_relu', 'linear', 'sigmoid', 'softmax']:
