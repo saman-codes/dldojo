@@ -19,13 +19,13 @@ class Initializer():
             elif initializer == 'ones':
                 weights = np.ones(shape)
             elif initializer == 'glorot_normal':
-                sigma = np.sqrt(2/(shape[0] + shape[1]))
+                sigma = 2/(shape[0] + shape[1])
                 weights = np.random.randn(*shape) * sigma
             elif initializer == 'glorot_uniform':
                 limit = np.sqrt(6/(shape[0] + shape[1]))
                 weights = np.random.uniform(-limit, +limit, shape)
             elif initializer == 'he_normal':
-                sigma = np.sqrt(2/(shape[1]))
+                sigma = 2/(shape[1])
                 weights = np.random.randn(*shape) * sigma
             elif initializer == 'he_uniform':
                 limit = np.sqrt(6/(shape[1]))
