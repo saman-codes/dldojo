@@ -1,0 +1,17 @@
+TO CHECK:
+    Check minmax scaling implementation
+    Check glorot normal and both he init implementations
+    Check Dropout
+
+
+TO ADD:
+    Softmax implementation that doesn't depend on Sigmoid in last layer
+    Convolutional layer
+    Deconvolutional layer
+    Recurrent layer
+    LSTM layer
+    GAN architecture
+    Attention architecture
+    Momentum optimizer
+    ADAM optimizer
+    other optimizers ...

@@ -33,8 +33,8 @@ class Network():
 
     def train(self, x, y, loss,
                 batch_size=1, epochs=100, learning_rate=5e-4,
-                regularizer=None, verbose=True, plot_loss=True,
-                shuffle_data=True, gradient_check=False
+                optimizer='minibatch_sgd', regularizer=None, verbose=True,
+                plot_loss=True, shuffle_data=True, gradient_check=False
             ):
         '''
         First implement a forward pass and store the weighted products and activations
@@ -94,7 +94,7 @@ class Network():
                         self._check_gradient(minibatch_x, minibatch_y, layer)
                     else:
                         # Do not update the weights if checking the gradients
-                        layer.update_weights(learning_rate, batch_size)
+                        layer.update_weights(learning_rate, batch_size, optimizer)
                     next_layer = layer
                 idx += batch_size
 

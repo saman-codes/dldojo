@@ -1,5 +1,9 @@
+# Python
+import string
+
 # Local
 import settings
+import optimizers
 from initializers import Initializer
 from activations import *
 
@@ -83,13 +87,20 @@ class Layer():
         self.bias_gradient = self.error.sum(axis=1, keepdims=True)
         return
 
-    def update_weights(self, learning_rate, batch_size):
+    def update_weights(self, learning_rate, batch_size, optimizer=''):
         if self.is_trainable:
             # Update weights
-            self.weights -= learning_rate/batch_size * self.gradient
-            # Update bias (average error over batches)
-            if self.use_bias:
-                self.bias -= learning_rate/batch_size * self.bias_gradient
+            opt_class_name= ''.join([w.capitalize() for w in optimizer.split('_')])
+            try:
+                opt_class = getattr(optimizers, opt_class_name)
+                optimizer = opt_class()
+                self.weights = optimizer.update_weights(self.weights, learning_rate, batch_size, self.gradient)
+
+                # Update bias (average error over batches)
+                if self.use_bias:
+                    self.bias = optimizer.update_bias(self.bias, learning_rate, batch_size, self.bias_gradient)
+            except:
+                raise Exception(f'Optimizer {opt_class_name} is not a valid optimizer')
         return
 
     def _set_dropout_mask(self):
