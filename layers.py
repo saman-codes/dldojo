@@ -4,6 +4,7 @@ import string
 # Local
 import settings
 import optimizers
+from operations import Operations
 from initializers import Initializer
 from activations import *
 
@@ -14,32 +15,29 @@ import numpy as np
 class Layer():
     '''
     Base class for a neural network layer
-    Shape is (hidden size, input size, num channels)
+    Shape is (hidden size, input size)
     '''
 
     def __init__(self,
                  shape=(0, 0),
-                 activation='linear',
-                 weight_init='xavier',
+                 activation='sigmoid',
+                 weight_init='glorot_uniform',
                  use_bias=True,
                  bias_init='zeros',
                  is_trainable=True,
                  dropout=1.,
-                 flatten=False,
-                 minmax_scaling=False):
+                 preprocessing=list(),
+    ):
 
         self.is_trainable = is_trainable
         self.shape = shape
         self.use_bias = use_bias
         self.add_dropout = bool(dropout < 1.)
         self.dropout_p = dropout
-        self.flatten = flatten
-        self.minmax_scaling = minmax_scaling
         self.is_output_layer = False
-        '''
-        TODO: Init-ing to None for now, change to an np.zeros with correct shape
-        '''
+        self.preprocessing = preprocessing
         self.error = None
+
         def _init_weights():
             self.weights = Initializer.initialize_weights(weight_init, self.shape)
             if self.is_trainable:
@@ -61,11 +59,7 @@ class Layer():
         return
 
     def forward(self, x, runtime='train'):
-        if self.flatten:
-            x = x.reshape(-1, 1)
-        self.x = x
-        if self.minmax_scaling:
-            self.x = np.divide((x - np.amin(x)),(np.amax(x) - np.amin(x)))
+        self.x = self._preprocessing(x)
         self.wx = self.weights.dot(self.x)
         if self.use_bias:
             self.wx += self.bias.dot(np.ones((1,self.wx.shape[1])))
@@ -89,14 +83,11 @@ class Layer():
 
     def update_weights(self, learning_rate, batch_size, optimizer=''):
         if self.is_trainable:
-            # Update weights
             opt_class_name= ''.join([w.capitalize() for w in optimizer.split('_')])
             try:
                 opt_class = getattr(optimizers, opt_class_name)
                 optimizer = opt_class()
                 self.weights = optimizer.update_weights(self.weights, learning_rate, batch_size, self.gradient)
-
-                # Update bias (average error over batches)
                 if self.use_bias:
                     self.bias = optimizer.update_bias(self.bias, learning_rate, batch_size, self.bias_gradient)
             except:
@@ -107,6 +98,16 @@ class Layer():
         # This mask implements Inverted Dropout
         self.dropout_mask = (np.random.rand(*self.out.shape) < self.dropout_p) / self.dropout_p
         return
+
+    def _preprocessing(self, x):
+        self.x = x
+        for p in self.preprocessing:
+            try:
+                pp_step = getattr(Operations, p)
+                self.x = pp_step(self.x)
+            except:
+                raise Exception(f'{p} is not a valid preprocessing step')
+        return self.x
 
 class Feedforward(Layer):
     pass
@@ -129,6 +130,3 @@ class Convolutional(Layer):
 
     def backward():
         return
-
-class BatchNormalization(Layer):
-    pass

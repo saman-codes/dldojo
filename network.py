@@ -33,7 +33,7 @@ class Network():
 
     def train(self, x, y, loss,
                 batch_size=1, epochs=100, learning_rate=5e-4,
-                optimizer='minibatch_sgd', regularizer=None, verbose=True,
+                optimizer='minibatch_sgd', regularizer=None, verbose=False,
                 plot_loss=True, shuffle_data=True, gradient_check=False
             ):
         '''
@@ -102,43 +102,6 @@ class Network():
             plt.plot([i[0] for i in self.training_loss], [i[1] for i in self.training_loss])
             plt.show()
 
-    def _check_gradient(self, x, y, layer):
-        epsilon = 1e-6
-        for i in tqdm(range(layer.shape[0])):
-            for j in range(layer.shape[1]):
-                layer.weights[i,j] += epsilon
-                output_plus = self.test_predict(x)
-                loss_plus = self.loss(output_plus, y)
-                layer.weights[i,j] -= 2*epsilon
-                output_minus = self.test_predict(x)
-                loss_minus = self.loss(output_minus, y)
-                raw_gradient = ((loss_plus - loss_minus)/(2*epsilon))
-                gradient = ((loss_plus - loss_minus)/(2*epsilon)).sum()
-                backprop_gradient = layer.gradient[i,j]
-                grad_rel_diff = (gradient-backprop_gradient)/(np.absolute(gradient) + np.absolute(backprop_gradient) + 1)
-                # if not np.isclose(grad_rel_diff, 0.0, rtol=1e-5):
-                if not grad_rel_diff < 1e-5:
-                    raise Exception(f"Computed gradient is not correct for layer {layer}")
-                # Reset weights
-                layer.weights[i,j] += epsilon
-        if layer.use_bias:
-            for i in tqdm(range(len(layer.bias))):
-                layer.bias[i,0] += epsilon
-                output_plus = self.test_predict(x)
-                loss_plus = self.loss(output_plus, y)
-                layer.bias[i,0] -= 2*epsilon
-                output_minus = self.test_predict(x)
-                loss_minus = self.loss(output_minus, y)
-                raw_gradient = ((loss_plus - loss_minus)/(2*epsilon))
-                gradient = ((loss_plus - loss_minus)/(2*epsilon)).sum()
-                backprop_gradient = layer.bias_gradient[i].sum()
-                grad_rel_diff = (gradient-backprop_gradient)/(np.absolute(gradient) + np.absolute(backprop_gradient) + 1)
-                # if not np.isclose(grad_rel_diff, 0.0, rtol=1e-5):
-                if not grad_rel_diff < 1e-5:
-                    raise Exception(f"Computed gradient is not correct for bias in layer {layer}")
-                layer.bias[i,0] += epsilon
-        logging.info(f'All computed gradients are correct for layer {layer}')
-
     def _add_regularization_term(self, layer):
         if self.regularizer == 'L2':
             # Derivative of the squared weights, so we lose the power of 2
@@ -164,3 +127,41 @@ class Network():
             self.layers.append(layer)
         else:
             raise Exception
+
+    ### Utils ###
+    def _check_gradient(self, x, y, layer):
+            epsilon = 1e-6
+            for i in tqdm(range(layer.shape[0])):
+                for j in range(layer.shape[1]):
+                    layer.weights[i,j] += epsilon
+                    output_plus = self.test_predict(x)
+                    loss_plus = self.loss(output_plus, y)
+                    layer.weights[i,j] -= 2*epsilon
+                    output_minus = self.test_predict(x)
+                    loss_minus = self.loss(output_minus, y)
+                    raw_gradient = ((loss_plus - loss_minus)/(2*epsilon))
+                    gradient = ((loss_plus - loss_minus)/(2*epsilon)).sum()
+                    backprop_gradient = layer.gradient[i,j]
+                    grad_rel_diff = (gradient-backprop_gradient)/(np.absolute(gradient) + np.absolute(backprop_gradient) + 1)
+                    # if not np.isclose(grad_rel_diff, 0.0, rtol=1e-5):
+                    if not grad_rel_diff < 1e-5:
+                        raise Exception(f"Computed gradient is not correct for layer {layer}")
+                    # Reset weights
+                    layer.weights[i,j] += epsilon
+            if layer.use_bias:
+                for i in tqdm(range(len(layer.bias))):
+                    layer.bias[i,0] += epsilon
+                    output_plus = self.test_predict(x)
+                    loss_plus = self.loss(output_plus, y)
+                    layer.bias[i,0] -= 2*epsilon
+                    output_minus = self.test_predict(x)
+                    loss_minus = self.loss(output_minus, y)
+                    raw_gradient = ((loss_plus - loss_minus)/(2*epsilon))
+                    gradient = ((loss_plus - loss_minus)/(2*epsilon)).sum()
+                    backprop_gradient = layer.bias_gradient[i].sum()
+                    grad_rel_diff = (gradient-backprop_gradient)/(np.absolute(gradient) + np.absolute(backprop_gradient) + 1)
+                    # if not np.isclose(grad_rel_diff, 0.0, rtol=1e-5):
+                    if not grad_rel_diff < 1e-5:
+                        raise Exception(f"Computed gradient is not correct for bias in layer {layer}")
+                    layer.bias[i,0] += epsilon
+            logging.info(f'All computed gradients are correct for layer {layer}')

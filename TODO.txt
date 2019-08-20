@@ -5,13 +5,13 @@ TO CHECK:
 
 
 TO ADD:
-    Softmax implementation that doesn't depend on Sigmoid in last layer
     Convolutional layer
+    Batch normalization
+    Softmax implementation that doesn't depend on Sigmoid in last layer
     Deconvolutional layer
     Recurrent layer
     LSTM layer
     GAN architecture
     Attention architecture
-    Momentum optimizer
     ADAM optimizer
     other optimizers ...
