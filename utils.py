@@ -86,19 +86,23 @@ def get_accuracy_mnist(x, y, net):
     logging.info(f'Accuracy: {100*accuracy}%')
 
 def plot_weights(net, save_plot=True):
-    cols = len(net.layers)
-    rows = 1
-    fig = plt.figure(figsize=(5,5))
-    plt.title(f'{net.__name__} weights', fontsize=12)
-    plt.xticks([])
-    plt.yticks([])
     for idx, layer in enumerate(net.layers):
-        w = layer.weights
-        fig.add_subplot(rows, cols, idx+1)
-        plt.imshow(w)
+        cols = int(np.sqrt(layer.shape[0]))
+        rows = int(layer.shape[0]/cols)
+        if  layer.shape[0] % rows > 0:
+            rows += 1
+        fig = plt.figure(figsize=(5,5))
+        plt.title(f'{net.__name__} weights - Layer {idx}', fontsize=12)
         plt.xticks([])
         plt.yticks([])
-        plt.title(f'Layer {idx} weights', fontsize=10)
-    if save_plot:
-        plt.savefig(os.path.join(settings.FIGURES_DIR, f'{net.__name__}_weights.png'))
-    plt.show()
+        for neuron in range(layer.shape[0]):
+            fig.add_subplot(rows, cols, neuron+1)
+            square_shape = (int(np.sqrt(layer.weights.shape[1])), -1)
+            w = layer.weights[neuron,:].reshape(square_shape)
+            plt.imshow(w, cmap='gray')
+            plt.xticks([])
+            plt.yticks([])
+
+        if save_plot:
+            plt.savefig(os.path.join(settings.FIGURES_DIR, f'{net.__name__}_layer_{idx}_weights.png'))
+        plt.show()

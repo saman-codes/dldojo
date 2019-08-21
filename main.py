@@ -134,10 +134,67 @@ def run_ff_with_momentum():
     net.add(Output(shape=(os, hs)))
     net.train(x_train,  y_train, loss,
             optimizer='momentum', batch_size=bs,
-            learning_rate=9e-2, epochs=100,
+            learning_rate=1e-1, epochs=100,
             plot_loss=True
             )
     get_accuracy_mnist(x_test, y_test, net)
+
+def run_ff_with_nesterov_momentum():
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    ins = 784
+    os = 10
+    hs = 100
+    bs = 1000
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('FF with nesterov momentum')
+    # net.add(Feedforward(shape=(hs, ins)))
+    # net.add(Feedforward(shape=(hs, hs)))
+    net.add(Output(shape=(os, ins)))
+    net.train(x_train,  y_train, loss,
+            optimizer='nesterov_momentum', batch_size=bs,
+            learning_rate=1e-1, epochs=100,
+            plot_loss=False
+            )
+    get_accuracy_mnist(x_test, y_test, net)
+    plot_weights(net)
+
+def run_no_hidden_layer_ff():
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    ins = 784
+    os = 10
+    bs = 1000
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('No hidden layer NN')
+    net.add(Output(shape=(os, ins)))
+    net.train(x_train,  y_train, loss,
+            optimizer='nesterov_momentum', batch_size=bs,
+            learning_rate=2e-1, epochs=100,
+            plot_loss=False
+            )
+    get_accuracy_mnist(x_test, y_test, net)
+    plot_weights(net)
+
+def run_two_hidden_layers_ff():
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    ins = 784
+    os = 10
+    hs = 100
+    bs = 1000
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('Two hidden layers NN')
+    net.add(Feedforward(shape=(hs, ins)))
+    net.add(Feedforward(shape=(hs, hs)))
+    net.add(Output(shape=(os, hs)))
+    net.train(x_train,  y_train, loss,
+            optimizer='nesterov_momentum', batch_size=bs,
+            learning_rate=2e-1, epochs=100,
+            plot_loss=False
+            )
+    get_accuracy_mnist(x_test, y_test, net)
+    plot_weights(net)
 
 if __name__ == '__main__':
     # run_autoencoder()
@@ -146,6 +203,11 @@ if __name__ == '__main__':
     # run_ff_with_dropout()
     # run_ff_with_regularization()
     # run_ff_with_minmax_scaling()
-    run_ff_with_momentum()
+    # run_ff_with_momentum()
+    # run_ff_with_nesterov_momentum()
+    run_no_hidden_layer_ff()
+    # run_two_hidden_layers_ff()
+
+
 
 

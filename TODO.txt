@@ -7,7 +7,8 @@ TO CHECK:
 TO ADD:
     Convolutional layer
     Batch normalization
-    Softmax implementation that doesn't depend on Sigmoid in last layer
+    CrossEntropy implementation that doesn't depend on Sigmoid in last layer
+    Softmax layer
     Deconvolutional layer
     Recurrent layer
     LSTM layer

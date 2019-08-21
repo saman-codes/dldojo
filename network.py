@@ -34,7 +34,8 @@ class Network():
     def train(self, x, y, loss,
                 batch_size=1, epochs=100, learning_rate=5e-4,
                 optimizer='minibatch_sgd', regularizer=None, verbose=False,
-                plot_loss=True, shuffle_data=True, gradient_check=False
+                plot_loss=True, shuffle_data=True, gradient_check=False,
+                save_weights=False
             ):
         '''
         First implement a forward pass and store the weighted products and activations
