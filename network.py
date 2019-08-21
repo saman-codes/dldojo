@@ -103,6 +103,10 @@ class Network():
             plt.plot([i[0] for i in self.training_loss], [i[1] for i in self.training_loss])
             plt.show()
 
+        if save_weights:
+            # TODO: implement weight save logic
+            pass
+
     def _add_regularization_term(self, layer):
         if self.regularizer == 'L2':
             # Derivative of the squared weights, so we lose the power of 2

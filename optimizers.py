@@ -40,6 +40,11 @@ class Momentum(Optimizer):
         return bias
 
 class NesterovMomentum(Optimizer):
+    '''
+    Note: this implementation uses an approximation of the
+    Nesterov Momentum formula which is valid only for large
+    values of mu, see: stackoverflow.com/questions/50774683
+    '''
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.velocity = 0

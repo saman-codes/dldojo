@@ -5,6 +5,7 @@ TO CHECK:
 
 
 TO ADD:
+    Save and load weights
     Convolutional layer
     Batch normalization
     CrossEntropy implementation that doesn't depend on Sigmoid in last layer
