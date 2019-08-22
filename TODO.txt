@@ -5,6 +5,7 @@ TO CHECK:
 
 
 TO ADD:
+    ADAM optimizer
     Save and load weights
     Convolutional layer
     Batch normalization
@@ -15,5 +16,3 @@ TO ADD:
     LSTM layer
     GAN architecture
     Attention architecture
-    ADAM optimizer
-    other optimizers ...

@@ -1,3 +1,6 @@
+# Thirdparty
+import numpy as np
+
 class Optimizer():
 
     def __init__(self, **kwargs):
@@ -63,4 +66,38 @@ class NesterovMomentum(Optimizer):
         self.previous_bias_velocity = self.bias_velocity
         self.bias_velocity = mu * self.bias_velocity - lr/batch_size * bias_gradient
         bias += -mu * self.previous_bias_velocity + (1 + mu) * self.bias_velocity
+        return bias
+
+class Adagrad(Optimizer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cache = 0
+        self.bias_cache = 0
+        return
+
+    def update_weights(self, weights, lr, batch_size, gradient, eps=1e-6):
+        self.cache += gradient ** 2
+        weights -= lr / (np.sqrt(self.cache) + eps) * gradient
+        return weights
+
+    def update_bias(self, bias, lr, batch_size, bias_gradient, eps=1e-6):
+        self.bias_cache += bias_gradient ** 2
+        bias -= lr / (np.sqrt(self.bias_cache) + eps) * bias_gradient
+        return bias
+
+class Rmsprop(Optimizer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.cache = 0
+        self.bias_cache = 0
+        return
+
+    def update_weights(self, weights, lr, batch_size, gradient, eps=1e-6, decay_rate=0.99):
+        self.cache += decay_rate * self.cache + (1 - decay_rate) * gradient ** 2
+        weights -= lr / (np.sqrt(self.cache) + eps) * gradient
+        return weights
+
+    def update_bias(self, bias, lr, batch_size, bias_gradient, eps=1e-6, decay_rate=0.99):
+        self.bias_cache += decay_rate * self.bias_cache + (1 - decay_rate) * bias_gradient ** 2
+        bias -= lr / (np.sqrt(self.bias_cache) + eps) * bias_gradient
         return bias

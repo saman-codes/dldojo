@@ -19,7 +19,7 @@ def run_autoencoder():
     net.add(Feedforward(shape=(250, ins)))
     net.add(Feedforward(shape=(100, 250)))
     net.add(Feedforward(shape=(250, 100)))
-    net.add(Output(shape=(os, 250), **okwargs))
+    net.add(Output(shape=(os, 250)))
     net.train(x_train,  x_train, loss, batch_size=bs, learning_rate=1e-3,
               epochs=100, plot_loss=True)
     plot_weights(net)
@@ -27,6 +27,7 @@ def run_autoencoder():
     generator.set_name('Generator')
     generator.layers = net.layers[2:]
     plot_random_mnist_autoencoder(generator)
+    plot_weights()
 
 def run_feedforward_gradient_checking():
     bs = 10
@@ -149,7 +150,7 @@ def run_ff_with_nesterov_momentum():
     net = Network()
     net.set_name('FF with nesterov momentum')
     net.add(Feedforward(shape=(hs, ins)))
-    net.add(Output(shape=(os, ins)))
+    net.add(Output(shape=(os, hs)))
     net.train(x_train,  y_train, loss,
             optimizer='nesterov_momentum', batch_size=bs,
             learning_rate=1e-1, epochs=100,
@@ -213,6 +214,44 @@ def run_no_hidden_layer_ff_relu():
     get_accuracy_mnist(x_test, y_test, net)
     plot_weights(net)
 
+def run_ff_with_adagrad():
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    ins = 784
+    os = 10
+    hs = 100
+    bs = 1000
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('FF with Adagrad')
+    net.add(Feedforward(shape=(hs, ins)))
+    net.add(Output(shape=(os, hs)))
+    net.train(x_train,  y_train, loss,
+            optimizer='adagrad', batch_size=bs,
+            learning_rate=1e-3, epochs=100,
+            plot_loss=False
+            )
+    get_accuracy_mnist(x_test, y_test, net)
+    plot_weights(net)
+
+def run_ff_with_rmsprop():
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    ins = 784
+    os = 10
+    hs = 100
+    bs = 1000
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('FF with Rmsprop')
+    net.add(Feedforward(shape=(hs, ins)))
+    net.add(Output(shape=(os, hs)))
+    net.train(x_train,  y_train, loss,
+            optimizer='rmsprop', batch_size=bs,
+            learning_rate=1e-3, epochs=100,
+            plot_loss=False
+            )
+    get_accuracy_mnist(x_test, y_test, net)
+    plot_weights(net)
+
 if __name__ == '__main__':
     # run_autoencoder()
     # run_feedforward()
@@ -225,7 +264,9 @@ if __name__ == '__main__':
     # run_no_hidden_layer_ff()
     # run_two_hidden_layers_ff()
     # run_two_hidden_layers_ff_relu()
-    run_no_hidden_layer_ff_relu()
+    # run_no_hidden_layer_ff_relu()
+    # run_ff_with_adagrad()
+    run_ff_with_rmsprop()
 
 
 
