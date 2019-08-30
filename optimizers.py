@@ -101,3 +101,32 @@ class Rmsprop(Optimizer):
         self.bias_cache += decay_rate * self.bias_cache + (1 - decay_rate) * bias_gradient ** 2
         bias -= lr / (np.sqrt(self.bias_cache) + eps) * bias_gradient
         return bias
+
+class Adam(Optimizer):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.t = 0
+        self.cache_m = 0
+        self.cache_v = 0
+        self.bias_cache_m = 0
+        self.bias_cache_v = 0
+        return
+
+    def update_weights(self, weights, lr, batch_size, gradient, eps=1e-8, beta1=0.9, beta2=0.999):
+        self.t += 1
+        self.cache_m = beta1*self.cache_m + (1-beta1)*gradient
+        # Bias correction
+        m_corrected = self.cache_m / (1-beta1**self.t)
+        self.cache_v = beta2 * self.cache_v + (1-beta2)*(gradient**2)
+        v_corrected = self.cache_v / (1-beta2**self.t)
+        weights -= lr * m_corrected / (np.sqrt(v_corrected) + eps)
+        return weights
+
+    def update_bias(self, bias, lr, batch_size, bias_gradient, eps=1e-8, beta1=0.9, beta2=0.999):
+        self.bias_cache_m = beta1*self.bias_cache_m + (1-beta1)*bias_gradient
+        # Bias correction
+        m_corrected = self.bias_cache_m / (1-beta1**self.t)
+        self.bias_cache_v = beta2 * self.bias_cache_v + (1-beta2)*(bias_gradient**2)
+        v_corrected = self.bias_cache_v / (1-beta2**self.t)
+        bias -= lr * m_corrected / (np.sqrt(v_corrected) + eps)
+        return bias
