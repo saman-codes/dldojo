@@ -26,6 +26,7 @@ class Layer():
                  bias_init='zeros',
                  is_trainable=True,
                  dropout=1.,
+                 batch_normalization=False,
                  preprocessing=list(),
     ):
 
@@ -37,6 +38,7 @@ class Layer():
         self.is_output_layer = False
         self.preprocessing = preprocessing
         self.error = None
+        self.batch_normalization = batch_normalization
 
         def _init_weights():
             self.weights = Initializer.initialize_weights(weight_init, self.shape)
@@ -61,8 +63,23 @@ class Layer():
     def forward(self, x, runtime='train'):
         self.x = self._preprocessing(x)
         self.wx = self.weights.dot(self.x)
-        if self.use_bias:
-            self.wx += self.bias.dot(np.ones((1,self.wx.shape[1])))
+        if self.batch_normalization:
+            # Apply batch normalization before nonlinearity
+            # Bias is included in beta parameter later
+            if runtime=='train':
+                # Mean and variance are estimated over batches
+                mean_wx = self.wx.mean(axis=1, keepdims=True)
+                var_wx = ((self.wx - mean_wx)**2).mean(axis=1, keepdims=True)
+                norm_x = (self.wx - mean_wx) / (np.sqrt(var_wx) + 1e-8)
+                # Multiply by alpha and add beta parameter
+                self.wx = self.gamma*norm_x + self.beta
+            else:
+            # During inference use population estimators
+                pass
+        else:
+            # No batch normalization applied
+            if self.use_bias:
+                self.wx += self.bias.dot(np.ones((1,self.wx.shape[1])))
         self.out = self.activation(self.wx)
         if self.add_dropout and runtime == 'train':
             self._set_dropout_mask()

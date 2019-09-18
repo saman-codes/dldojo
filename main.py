@@ -272,6 +272,35 @@ def run_ff_with_adam():
     get_accuracy_mnist(x_test, y_test, net)
     plot_weights(net)
 
+def run_ff_with_batchnorm():
+    # x_train, y_train, x_test, y_test = load_mnist(train_set_size=1000, test_set_size=100)
+    ins = 2
+    os = 10
+    hs = 3
+    bs = 2
+    train_set_size = bs*10
+    x_train = np.random.rand(ins, train_set_size)
+    x_test = np.random.rand(ins, bs)
+    y_train = np.ones((os, train_set_size))
+    y_test = np.ones((os, bs))
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('FF with BatchNorm')
+    net.add(Feedforward(shape=(hs, ins), batch_normalization=True))
+    net.add(Output(shape=(os, hs)))
+    net.train(x_train,  y_train, loss,
+            optimizer='adam', batch_size=bs,
+            learning_rate=1e-2, epochs=25,
+            plot_loss=True
+            )
+
+    y_pred = net.test_predict(x_test)
+    y_pred_scalar = np.argmax(y_pred, axis=0)
+    y_scalar = np.argmax(y_test, axis=0)
+    accuracy = np.sum(y_scalar == y_pred_scalar)/len(y_scalar)
+    print(f'Accuracy: {100*accuracy}%')
+
+
 if __name__ == '__main__':
     # run_autoencoder()
     # run_feedforward()
@@ -287,7 +316,9 @@ if __name__ == '__main__':
     # run_no_hidden_layer_ff_relu()
     # run_ff_with_adagrad()
     # run_ff_with_rmsprop()
-    run_ff_with_adam()
+    # run_ff_with_adam()
+    run_ff_with_batchnorm()
+
 
 
 
