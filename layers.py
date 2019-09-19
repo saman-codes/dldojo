@@ -44,6 +44,9 @@ class Layer():
             self.weights = Initializer.initialize_weights(weight_init, self.shape)
             if self.is_trainable:
                 self.gradient = np.zeros_like(self.weights)
+            if self.batch_normalization:
+                self.bn_gamma = 1
+                self.bn_beta = 0
 
         def _init_bias():
             bias_shape = (self.shape[0], 1)
@@ -65,14 +68,15 @@ class Layer():
         self.wx = self.weights.dot(self.x)
         if self.batch_normalization:
             # Apply batch normalization before nonlinearity
-            # Bias is included in beta parameter later
+            # Bias is included in beta parameter later, 
+            # so no bias is applied here
             if runtime=='train':
                 # Mean and variance are estimated over batches
                 mean_wx = self.wx.mean(axis=1, keepdims=True)
                 var_wx = ((self.wx - mean_wx)**2).mean(axis=1, keepdims=True)
                 norm_x = (self.wx - mean_wx) / (np.sqrt(var_wx) + 1e-8)
                 # Multiply by alpha and add beta parameter
-                self.wx = self.gamma*norm_x + self.beta
+                self.wx = self.bn_gamma * norm_x + self.bn_beta
             else:
             # During inference use population estimators
                 pass
@@ -96,6 +100,10 @@ class Layer():
         self.error = next_layer.weights.T.dot(next_layer.error) * dwx
         self.gradient = self.error.dot(self.x.T)
         self.bias_gradient = self.error.sum(axis=1, keepdims=True)
+        if self.batch_normalization:
+            self.bn_gamma_gradient = 0.1
+            self.bn_beta_gradient = 0.1
+            # self.error =  
         return
 
     def update_weights(self, learning_rate, batch_size, optimizer=''):

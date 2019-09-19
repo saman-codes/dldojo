@@ -316,7 +316,7 @@ if __name__ == '__main__':
     # run_no_hidden_layer_ff_relu()
     # run_ff_with_adagrad()
     # run_ff_with_rmsprop()
-    # run_ff_with_adam()
+    # run_ff_with_adam()    
     run_ff_with_batchnorm()
 
 
