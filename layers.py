@@ -37,7 +37,7 @@ class Layer():
         self.dropout_p = dropout
         self.is_output_layer = False
         self.preprocessing = preprocessing
-        self.error = None
+        self.backward_gradient = None
         self.batch_normalization = batch_normalization
 
         def _init_weights():
@@ -87,15 +87,12 @@ class Layer():
         return self.out
 
     def backward(self, next_layer):
-        '''
-        Calculate current layer error and gradient
-        '''
         dwx = self.activation.derivative(self.wx)
         if self.add_dropout:
             dwx *= self.dropout_mask
-        self.error = next_layer.weights.T.dot(next_layer.error) * dwx
-        self.gradient = self.error.dot(self.x.T)
-        self.bias_gradient = self.error.sum(axis=1, keepdims=True)
+        self.backward_gradient = next_layer.weights.T.dot(next_layer.backward_gradient) * dwx
+        self.gradient = self.backward_gradient.dot(self.x.T)
+        self.bias_gradient = self.backward_gradient.sum(axis=1, keepdims=True)
         return
 
     def update_weights(self, learning_rate, batch_size, optimizer=''):

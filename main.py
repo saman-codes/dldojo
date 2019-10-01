@@ -301,6 +301,28 @@ def run_ff_with_batchnorm():
     print(f'Accuracy: {100*accuracy}%')
 
 
+def save_weights_test():
+    # x_train, y_train, x_test, y_test = load_mnist(train_set_size=1000, test_set_size=100)
+    ins = 2
+    os = 10
+    hs = 3
+    bs = 2
+    train_set_size = bs*10
+    x_train = np.random.rand(ins, train_set_size)
+    x_test = np.random.rand(ins, bs)
+    y_train = np.ones((os, train_set_size))
+    y_test = np.ones((os, bs))
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('Save weights test')
+    net.add(Feedforward(shape=(hs, ins)))
+    net.add(Output(shape=(os, hs)))
+    net.train(x_train,  y_train, loss,
+            optimizer='adam', batch_size=bs,
+            learning_rate=1e-2, epochs=5,
+            save_weights=True
+            )
+
 if __name__ == '__main__':
     # run_autoencoder()
     # run_feedforward()
@@ -317,7 +339,8 @@ if __name__ == '__main__':
     # run_ff_with_adagrad()
     # run_ff_with_rmsprop()
     # run_ff_with_adam()
-    run_ff_with_batchnorm()
+    save_weights_test()
+    # run_ff_with_batchnorm()
 
 
 

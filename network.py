@@ -1,7 +1,9 @@
 # Standard Python
+import os
 import copy
+import pickle
 import logging
-
+from collections import OrderedDict
 # Local
 from layers import Layer
 from losses import CrossEntropy
@@ -19,23 +21,27 @@ class Network():
     Base class for a neural network model
     '''
 
-    def __init__(self):
-        '''
-        TODO: implement: layers stored in a dictionary, defining a computation graph
-        self.layers = {}
-        For now, store in a list
-        '''
+    def __init__(self,
+        load_weights=False,
+        ):
         self.__name__ = 'GenericNetwork'
-        self.layers = []
+        self.layers = list()
+        self.load_weights = load_weights
 
     def set_name(self, name):
         self.__name__ = name
 
     def train(self, x, y, loss,
-                batch_size=1, epochs=100, learning_rate=5e-4,
-                optimizer='minibatch_sgd', regularizer=None, verbose=False,
-                plot_loss=True, shuffle_data=True, gradient_check=False,
-                save_weights=False
+                batch_size=1,
+                epochs=100,
+                learning_rate=5e-4,
+                optimizer='minibatch_sgd',
+                regularizer=None,
+                verbose=False,
+                plot_loss=False,
+                shuffle_data=True,
+                gradient_check=False,
+                save_weights=False,
             ):
         '''
         First implement a forward pass and store the weighted products and activations
@@ -44,27 +50,32 @@ class Network():
         '''
         self.loss = loss
         self.training_loss = []
+        self.data_size = x.shape[1]
+        self.batch_size = batch_size
+        self.idx = 0
         if regularizer is not None:
             assert(isinstance(regularizer, tuple))
             self.regularizer, self.reg_lambda = regularizer
         else:
             self.regularizer = regularizer
         if shuffle_data:
-            data_size = x.shape[1]
             # Shuffle the original data
-            s = np.random.permutation(data_size)
+            s = np.random.permutation(self.data_size)
             x = x[:, s]
             y = y[:, s]
+        if self.load_weights and os.path.exists(load_weights):
+            try:
+                weights_list = pickle.load(load_weights)
+                for idx, l in enumerate(self.layers):
+                    l.weights = weights_list[idx][0]
+                    l.bias = weights_list[idx][1]
+            except Exception as ex:
+                logging.exception('Failed to load weights')
+
         for epoch in tqdm(range(epochs)):
-            idx = 0
-            while idx < data_size:
-                if idx+batch_size <= data_size:
-                    minibatch_x = x[:, idx:idx+batch_size]
-                    minibatch_y = y[:, idx:idx+batch_size]
-                else:
-                    # If remaining data is less than size of minibatch, take all remaining data
-                    minibatch_x = x[:, idx:]
-                    minibatch_y = y[:, idx:]
+            while self.idx < self.data_size:
+                minibatch_x, minibatch_y = self.get_minibatch(x, y)
+                # Forward pass
                 output = self.train_predict(minibatch_x)
                 loss = self.loss(output, minibatch_y).mean()
                 self.training_loss.append((epoch, loss))
@@ -72,7 +83,9 @@ class Network():
                 if verbose:
                     logging.info(f'Training loss: {loss}')
 
+                # Training step
                 for layer in reversed(self.layers):
+
                     if layer.is_output_layer:
                         dwx = layer.activation.derivative(layer.wx)
                         if isinstance(self.loss, CrossEntropy):
@@ -83,10 +96,10 @@ class Network():
                             '''
                             # CrossEntropy loss cancels out the sigma' term
                             dwx = 1
-                        layer.error = self.loss.output_gradient(
+                        layer.backward_gradient = self.loss.output_gradient(
                             output, minibatch_y) * dwx
-                        layer.gradient = layer.error.dot(layer.x.T)
-                        layer.bias_gradient = layer.error.sum(axis=1, keepdims=True)
+                        layer.gradient = layer.backward_gradient.dot(layer.x.T)
+                        layer.bias_gradient = layer.backward_gradient.sum(axis=1, keepdims=True)
                     else:
                         layer.backward(next_layer)
                     if self.regularizer:
@@ -95,17 +108,20 @@ class Network():
                         self._check_gradient(minibatch_x, minibatch_y, layer)
                     else:
                         # Do not update the weights if checking the gradients
-                        layer.update_weights(learning_rate, batch_size, optimizer)
+                        layer.update_weights(learning_rate, self.batch_size, optimizer)
                     next_layer = layer
-                idx += batch_size
 
         if plot_loss:
             plt.plot([i[0] for i in self.training_loss], [i[1] for i in self.training_loss])
             plt.show()
 
         if save_weights:
-            # TODO: implement weight save logic
-            pass
+            weights_list = [(l.weights, l.bias) for l in self.layers]
+            fname = os.path.join(os.getcwd(), f'{self.__name__}_{epoch}')
+            with open(fname, 'w+') as f:
+                os.chmod(fname, 777)
+                pickle.dump(weights_list, fname)
+                logging.info(f'Weights saved on file {fname}')
 
     def _add_regularization_term(self, layer):
         if self.regularizer == 'L2':
@@ -132,6 +148,18 @@ class Network():
             self.layers.append(layer)
         else:
             raise Exception
+
+    def get_minibatch(self, x, y):
+        if self.idx + self.batch_size <= self.data_size:
+            minibatch_x = x[:, self.idx:self.idx+self.batch_size]
+            minibatch_y = y[:, self.idx:self.idx+self.batch_size]
+        else:
+            # If remaining data is less than size of minibatch, take all remaining data
+            minibatch_x = x[:, self.idx:]
+            minibatch_y = y[:, self.idx:]
+
+        self.idx += self.batch_size
+        return minibatch_x, minibatch_y
 
     ### Utils ###
     def _check_gradient(self, x, y, layer):
