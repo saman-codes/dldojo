@@ -46,10 +46,11 @@ class Layer():
             if self.is_trainable:
                 self.gradient = np.zeros_like(self.weights)
             if self.batch_normalization:
-                self.bn_gamma = np.ones((self.shape[0], 1))
-                self.bn_beta = np.zeros((self.shape[0], 1))
+                self.batchnorm_gamma = np.ones((self.shape[0], 1))
+                self.batchnorm_beta = np.zeros((self.shape[0], 1))
                 self.mean_wx_list = list()
                 self.var_wx_list = list()
+                self.batchnorm_optimizer = None
 
         def _init_bias():
             bias_shape = (self.shape[0], 1)
@@ -83,13 +84,13 @@ class Layer():
                 # Get normalised wx
                 norm_x = (self.wx - mean_wx) / (np.sqrt(var_wx) + 1e-8)
                 # Multiply by alpha and add beta parameter
-                self.wx = self.bn_gamma * norm_x + self.bn_beta
+                self.wx = self.batchnorm_gamma * norm_x + self.batchnorm_beta
             else:
                 # During inference use population estimators
                 mean_wx = np.mean(self.mean_wx_list)
                 var_wx = np.mean(self.var_wx_list)
                 norm_x = (self.wx - mean_wx) / (np.sqrt(var_wx) + 1e-8)
-                self.wx = self.bn_gamma * norm_x + self.bn_beta
+                self.wx = self.batchnorm_gamma * norm_x + self.batchnorm_beta
         else:
             # No batch normalization applied
             if self.use_bias:
@@ -109,6 +110,12 @@ class Layer():
         return
 
     def update_weights(self, learning_rate, batch_size):
+        if self.batch_normalization:
+            if not(self.batchnorm_optimizer):
+                self._set_batchnorm_optimizer()
+            self.batchnorm_gamma = self.batchnorm_optimizer.update_weights(self.batchnorm_gamma, learning_rate, batch_size, self.batchnorm_beta_gradient)
+            self.batchnorm_beta = self.batchnorm_optimizer.update_weights(self.batchnorm_beta, learning_rate, batch_size, self.batchnorm_beta_gradient)
+
         if self.is_trainable:
             self.weights = self.optimizer.update_weights(self.weights, learning_rate, batch_size, self.gradient)
             if self.use_bias:
@@ -117,6 +124,18 @@ class Layer():
 
     def set_next_layer(self, next_layer):
         self.next_layer = next_layer
+        return
+
+    def set_optimizer(self, optimizer):
+        # Optimizer has to be set at the layer level, since some algorithms
+        # (e.g. Adam) use layer-level gradient caches
+        if not self.optimizer:
+            opt_class_name= ''.join([w.capitalize() for w in optimizer.split('_')])
+            try:
+                opt_class = getattr(optimizers, opt_class_name)
+                self.optimizer = opt_class()
+            except:
+                raise Exception(f'Optimizer {opt_class_name} is not a valid optimizer')
         return
 
     def _set_error(self):
@@ -139,16 +158,8 @@ class Layer():
         self.dropout_mask = (np.random.rand(*self.out.shape) < self.dropout_p) / self.dropout_p
         return
 
-    def set_optimizer(self, optimizer):
-        # Optimizer has to be set at the layer level, since some algorithms
-        # (e.g. Adam) use layer-level gradient caches
-        if not self.optimizer:
-            opt_class_name= ''.join([w.capitalize() for w in optimizer.split('_')])
-            try:
-                opt_class = getattr(optimizers, opt_class_name)
-                self.optimizer = opt_class()
-            except:
-                raise Exception(f'Optimizer {opt_class_name} is not a valid optimizer')
+    def _set_batchnorm_optimizer(self):
+        self.batchnorm_optimizer = self.optimizer.__class__()
         return
 
     def _preprocessing(self, x):
