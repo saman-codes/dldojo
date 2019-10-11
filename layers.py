@@ -45,8 +45,10 @@ class Layer():
             if self.is_trainable:
                 self.gradient = np.zeros_like(self.weights)
             if self.batch_normalization:
-                self.bn_gamma = np.ones(shape)
-                self.bn_beta = np.zeros(*shape)
+                self.bn_gamma = np.ones((self.shape[0], 1))
+                self.bn_beta = np.zeros((self.shape[0], 1))
+                self.mean_wx_list = list()
+                self.var_wx_list = list()
 
         def _init_bias():
             bias_shape = (self.shape[0], 1)
@@ -74,17 +76,26 @@ class Layer():
                 # Mean and variance are estimated over batches
                 mean_wx = self.wx.mean(axis=1, keepdims=True)
                 var_wx = ((self.wx - mean_wx)**2).mean(axis=1, keepdims=True)
+                # Collect mean and variance for later use in testing
+                self.mean_wx_list.append(mean_wx)
+                self.var_wx_list.append(var_wx)
+                # Get normalised wx
                 norm_x = (self.wx - mean_wx) / (np.sqrt(var_wx) + 1e-8)
                 # Multiply by alpha and add beta parameter
                 self.wx = self.bn_gamma * norm_x + self.bn_beta
             else:
-            # During inference use population estimators
-                pass
+                # During inference use population estimators
+                mean_wx = np.mean(self.mean_wx_list)
+                var_wx = np.mean(self.var_wx_list)
+                norm_x = (self.wx - mean_wx) / (np.sqrt(var_wx) + 1e-8)
+                self.wx = self.bn_gamma * norm_x + self.bn_beta
         else:
             # No batch normalization applied
             if self.use_bias:
                 self.wx += self.bias.dot(np.ones((1,self.wx.shape[1])))
+        # Apply activation function
         self.out = self.activation(self.wx)
+        # Apply dropout
         if self.add_dropout and runtime == 'train':
             self._set_dropout_mask()
             self.out *= self.dropout_mask

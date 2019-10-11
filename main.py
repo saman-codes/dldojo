@@ -273,16 +273,11 @@ def run_ff_with_adam():
     plot_weights(net)
 
 def run_ff_with_batchnorm():
-    # x_train, y_train, x_test, y_test = load_mnist(train_set_size=1000, test_set_size=100)
-    ins = 2
+    ins = 784
     os = 10
-    hs = 3
-    bs = 2
-    train_set_size = bs*10
-    x_train = np.random.rand(ins, train_set_size)
-    x_test = np.random.rand(ins, bs)
-    y_train = np.ones((os, train_set_size))
-    y_test = np.ones((os, bs))
+    hs = 10
+    bs = 100
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=100, test_set_size=10)
     loss = CrossEntropy()
     net = Network()
     net.set_name('FF with BatchNorm')
@@ -290,15 +285,10 @@ def run_ff_with_batchnorm():
     net.add(Output(shape=(os, hs)))
     net.train(x_train,  y_train, loss,
             optimizer='adam', batch_size=bs,
-            learning_rate=1e-2, epochs=25,
-            plot_loss=True
+            learning_rate=1e-2, epochs=5,
             )
 
-    y_pred = net.test_predict(x_test)
-    y_pred_scalar = np.argmax(y_pred, axis=0)
-    y_scalar = np.argmax(y_test, axis=0)
-    accuracy = np.sum(y_scalar == y_pred_scalar)/len(y_scalar)
-    print(f'Accuracy: {100*accuracy}%')
+    get_accuracy_mnist(x_test, y_test, net)
 
 
 def save_weights_test():
