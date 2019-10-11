@@ -93,12 +93,12 @@ class Rmsprop(Optimizer):
         return
 
     def update_weights(self, weights, lr, batch_size, gradient, eps=1e-6, decay_rate=0.99):
-        self.cache += decay_rate * self.cache + (1 - decay_rate) * gradient ** 2
+        self.cache = decay_rate * self.cache + (1 - decay_rate) * (gradient ** 2)
         weights -= lr / (np.sqrt(self.cache) + eps) * gradient
         return weights
 
     def update_bias(self, bias, lr, batch_size, bias_gradient, eps=1e-6, decay_rate=0.99):
-        self.bias_cache += decay_rate * self.bias_cache + (1 - decay_rate) * bias_gradient ** 2
+        self.bias_cache = decay_rate * self.bias_cache + (1 - decay_rate) * (bias_gradient ** 2)
         bias -= lr / (np.sqrt(self.bias_cache) + eps) * bias_gradient
         return bias
 

@@ -1,3 +1,7 @@
+BUGFIXES:
+
+
+
 TO CHECK:
     Check minmax scaling implementation
     Check glorot normal and both he init implementations
