@@ -243,11 +243,12 @@ def run_ff_with_rmsprop():
     net = Network()
     net.set_name('FF with Rmsprop')
     net.add(Feedforward(shape=(hs, ins)))
+    net.add(Feedforward(shape=(hs, hs)))
     net.add(Output(shape=(os, hs)))
     net.train(x_train,  y_train, loss,
             optimizer='rmsprop', batch_size=bs,
-            learning_rate=1e-3, epochs=100,
-            plot_loss=False
+            learning_rate=1e-4, epochs=100,
+            plot_loss=True
             )
     get_accuracy_mnist(x_test, y_test, net)
     plot_weights(net)
@@ -266,8 +267,8 @@ def run_ff_with_adam():
     net.add(Output(shape=(os, hs)))
     net.train(x_train,  y_train, loss,
             optimizer='adam', batch_size=bs,
-            learning_rate=1e-2, epochs=100,
-            plot_loss=True, regularizer=('L2', 0.5)
+            learning_rate=1e-4, epochs=100,
+            plot_loss=True, regularizer=('L2', 0.5),
             )
     get_accuracy_mnist(x_test, y_test, net)
     plot_weights(net)
@@ -327,10 +328,10 @@ if __name__ == '__main__':
     # run_two_hidden_layers_ff_relu()
     # run_no_hidden_layer_ff_relu()
     # run_ff_with_adagrad()
-    # run_ff_with_rmsprop()
+    run_ff_with_rmsprop()
     # run_ff_with_adam()
     # save_weights_test()
-    run_ff_with_batchnorm()
+    # run_ff_with_batchnorm()
 
 
 

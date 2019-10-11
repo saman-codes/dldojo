@@ -4,6 +4,7 @@ import copy
 import pickle
 import logging
 from collections import OrderedDict
+
 # Local
 from layers import Layer
 from losses import CrossEntropy
@@ -52,7 +53,8 @@ class Network():
         self.training_loss = []
         self.data_size = x.shape[1]
         self.batch_size = batch_size
-        self.idx = 0
+        self.set_optimizer(optimizer)
+
         if regularizer is not None:
             assert(isinstance(regularizer, tuple))
             self.regularizer, self.reg_lambda = regularizer
@@ -73,19 +75,18 @@ class Network():
                 logging.exception('Failed to load weights')
 
         for epoch in tqdm(range(epochs)):
+            self.idx = 0
             while self.idx < self.data_size:
                 minibatch_x, minibatch_y = self.get_minibatch(x, y)
                 # Forward pass
                 output = self.train_predict(minibatch_x)
                 loss = self.loss(output, minibatch_y).mean()
-                self.training_loss.append((epoch, loss))
 
                 if verbose:
                     logging.info(f'Training loss: {loss}')
 
                 # Training step
                 for layer in reversed(self.layers):
-
                     if layer.is_output_layer:
                         dwx = layer.activation.derivative(layer.wx)
                         if isinstance(self.loss, CrossEntropy):
@@ -96,20 +97,24 @@ class Network():
                             '''
                             # CrossEntropy loss cancels out the sigma' term
                             dwx = 1
-                        layer.backward_gradient = self.loss.output_gradient(
+                        layer.error = self.loss.output_gradient(
                             output, minibatch_y) * dwx
-                        layer.gradient = layer.backward_gradient.dot(layer.x.T)
-                        layer.bias_gradient = layer.backward_gradient.sum(axis=1, keepdims=True)
+                        layer.gradient = layer.error.dot(layer.x.T)
+                        layer.bias_gradient = layer.error.sum(axis=1, keepdims=True)
                     else:
-                        layer.backward(next_layer)
+                        layer.set_next_layer(next_layer)
+                        layer.backward()
                     if self.regularizer:
                         self._add_regularization_term(layer)
                     if gradient_check:
                         self._check_gradient(minibatch_x, minibatch_y, layer)
                     else:
                         # Do not update the weights if checking the gradients
-                        layer.update_weights(learning_rate, self.batch_size, optimizer)
+                        layer.update_weights(learning_rate, self.batch_size)
                     next_layer = layer
+
+            # Save training loss at end of epoch for plotting
+            self.training_loss.append((epoch, loss))
 
         if plot_loss:
             plt.plot([i[0] for i in self.training_loss], [i[1] for i in self.training_loss])
@@ -149,6 +154,12 @@ class Network():
         else:
             raise Exception
 
+    def set_optimizer(self, optimizer):
+        for layer in self.layers:
+            layer.set_optimizer(optimizer)
+        return
+
+
     def get_minibatch(self, x, y):
         if self.idx + self.batch_size <= self.data_size:
             minibatch_x = x[:, self.idx:self.idx+self.batch_size]
@@ -160,6 +171,10 @@ class Network():
 
         self.idx += self.batch_size
         return minibatch_x, minibatch_y
+
+
+
+########################################################################
 
     ### Utils ###
     def _check_gradient(self, x, y, layer):

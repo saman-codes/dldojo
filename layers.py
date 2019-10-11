@@ -4,9 +4,9 @@ import string
 # Local
 import settings
 import optimizers
+from activations import *
 from operations import Operations
 from initializers import Initializer
-from activations import *
 
 # Thirdparty
 import numpy as np
@@ -37,8 +37,9 @@ class Layer():
         self.dropout_p = dropout
         self.is_output_layer = False
         self.preprocessing = preprocessing
-        self.backward_gradient = None
+        self.error = None
         self.batch_normalization = batch_normalization
+        self.optimizer = None
 
         def _init_weights():
             self.weights = Initializer.initialize_weights(weight_init, self.shape)
@@ -101,31 +102,53 @@ class Layer():
             self.out *= self.dropout_mask
         return self.out
 
-    def backward(self, next_layer):
+    def backward(self):
+        self._set_error()
+        self._set_gradient()
+        self._set_bias_gradient()
+        return
+
+    def update_weights(self, learning_rate, batch_size):
+        if self.is_trainable:
+            self.weights = self.optimizer.update_weights(self.weights, learning_rate, batch_size, self.gradient)
+            if self.use_bias:
+                self.bias = self.optimizer.update_bias(self.bias, learning_rate, batch_size, self.bias_gradient)
+        return
+
+    def set_next_layer(self, next_layer):
+        self.next_layer = next_layer
+        return
+
+    def _set_error(self):
         dwx = self.activation.derivative(self.wx)
         if self.add_dropout:
             dwx *= self.dropout_mask
-        self.backward_gradient = next_layer.weights.T.dot(next_layer.backward_gradient) * dwx
-        self.gradient = self.backward_gradient.dot(self.x.T)
-        self.bias_gradient = self.backward_gradient.sum(axis=1, keepdims=True)
+        self.error = self.next_layer.weights.T.dot(self.next_layer.error) * dwx
         return
 
-    def update_weights(self, learning_rate, batch_size, optimizer=''):
-        if self.is_trainable:
-            opt_class_name= ''.join([w.capitalize() for w in optimizer.split('_')])
-            try:
-                opt_class = getattr(optimizers, opt_class_name)
-                optimizer = opt_class()
-                self.weights = optimizer.update_weights(self.weights, learning_rate, batch_size, self.gradient)
-                if self.use_bias:
-                    self.bias = optimizer.update_bias(self.bias, learning_rate, batch_size, self.bias_gradient)
-            except:
-                raise Exception(f'Optimizer {opt_class_name} is not a valid optimizer')
+    def _set_gradient(self):
+        self.gradient = self.error.dot(self.x.T)
+        return
+
+    def _set_bias_gradient(self):
+        self.bias_gradient = self.error.sum(axis=1, keepdims=True)
         return
 
     def _set_dropout_mask(self):
         # This mask implements Inverted Dropout
         self.dropout_mask = (np.random.rand(*self.out.shape) < self.dropout_p) / self.dropout_p
+        return
+
+    def set_optimizer(self, optimizer):
+        # Optimizer has to be set at the layer level, since some algorithms
+        # (e.g. Adam) use layer-level gradient caches
+        if not self.optimizer:
+            opt_class_name= ''.join([w.capitalize() for w in optimizer.split('_')])
+            try:
+                opt_class = getattr(optimizers, opt_class_name)
+                self.optimizer = opt_class()
+            except:
+                raise Exception(f'Optimizer {opt_class_name} is not a valid optimizer')
         return
 
     def _preprocessing(self, x):
