@@ -339,8 +339,8 @@ if __name__ == '__main__':
     # run_ff_with_adagrad()
     # run_ff_with_rmsprop()
     # run_ff_with_adam()
-    save_weights_test()
-    # run_ff_with_batchnorm()
+    # save_weights_test()
+    run_ff_with_batchnorm()
 
 
 
