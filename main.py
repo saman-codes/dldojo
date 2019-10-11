@@ -276,22 +276,23 @@ def run_ff_with_adam():
 def run_ff_with_batchnorm():
     ins = 784
     os = 10
-    hs = 10
-    bs = 100
-    x_train, y_train, x_test, y_test = load_mnist(train_set_size=100, test_set_size=10)
+    hs = 100
+    bs = 1000
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     loss = CrossEntropy()
     net = Network()
     net.set_name('FF with BatchNorm')
     net.add(Feedforward(shape=(hs, ins), batch_normalization=True))
+    net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
     net.add(Output(shape=(os, hs)))
     net.train(x_train,  y_train, loss,
             batch_size=bs,
             learning_rate=1e-2,
-            epochs=5,
+            epochs=10,
             )
 
     get_accuracy_mnist(x_test, y_test, net)
-
+    # plot_weights(net)
 
 def save_weights_test():
     # x_train, y_train, x_test, y_test = load_mnist(train_set_size=1000, test_set_size=100)

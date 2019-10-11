@@ -43,9 +43,8 @@ class Layer():
 
         def _init_weights():
             self.weights = Initializer.initialize_weights(weight_init, self.shape)
-            if self.is_trainable:
-                self.gradient = np.zeros_like(self.weights)
             if self.batch_normalization:
+                # Initialize gamma to 0 and beta to 1
                 self.batchnorm_gamma = np.ones((self.shape[0], 1))
                 self.batchnorm_beta = np.zeros((self.shape[0], 1))
                 self.mean_wx_list = list()
@@ -71,36 +70,18 @@ class Layer():
         self.x = self._preprocessing(x)
         self.wx = self.weights.dot(self.x)
         if self.batch_normalization:
-            # Apply batch normalization before nonlinearity
-            # Bias is included in beta parameter later,
-            # so no bias is applied here
-            if runtime=='train':
-                # Mean and variance are estimated over batches
-                mean_wx = self.wx.mean(axis=1, keepdims=True)
-                var_wx = ((self.wx - mean_wx)**2).mean(axis=1, keepdims=True)
-                # Collect mean and variance for later use in testing
-                self.mean_wx_list.append(mean_wx)
-                self.var_wx_list.append(var_wx)
-                # Get normalised wx
-                norm_x = (self.wx - mean_wx) / (np.sqrt(var_wx) + 1e-8)
-                # Multiply by alpha and add beta parameter
-                self.wx = self.batchnorm_gamma * norm_x + self.batchnorm_beta
-            else:
-                # During inference use population estimators
-                mean_wx = np.mean(self.mean_wx_list)
-                var_wx = np.mean(self.var_wx_list)
-                norm_x = (self.wx - mean_wx) / (np.sqrt(var_wx) + 1e-8)
-                self.wx = self.batchnorm_gamma * norm_x + self.batchnorm_beta
+            self._apply_batch_normalization(runtime)
+            # Apply activation function to normalized output
+            self.out = self.activation(self.x_hat)
         else:
             # No batch normalization applied
             if self.use_bias:
                 self.wx += self.bias.dot(np.ones((1,self.wx.shape[1])))
-        # Apply activation function
-        self.out = self.activation(self.wx)
+            # Apply activation function
+            self.out = self.activation(self.wx)
         # Apply dropout
-        if self.add_dropout and runtime == 'train':
-            self._set_dropout_mask()
-            self.out *= self.dropout_mask
+        if self.add_dropout:
+            self.out = self._apply_dropout(runtime)
         return self.out
 
     def backward(self):
@@ -108,20 +89,68 @@ class Layer():
         self._set_gradient()
         self._set_bias_gradient()
         return
-
-    def update_weights(self, learning_rate, batch_size):
-        if self.batch_normalization:
-            if not(self.batchnorm_optimizer):
-                self._set_batchnorm_optimizer()
-            self.batchnorm_gamma = self.batchnorm_optimizer.update_weights(self.batchnorm_gamma, learning_rate, batch_size, self.batchnorm_beta_gradient)
-            self.batchnorm_beta = self.batchnorm_optimizer.update_weights(self.batchnorm_beta, learning_rate, batch_size, self.batchnorm_beta_gradient)
-
-        if self.is_trainable:
-            self.weights = self.optimizer.update_weights(self.weights, learning_rate, batch_size, self.gradient)
-            if self.use_bias:
-                self.bias = self.optimizer.update_bias(self.bias, learning_rate, batch_size, self.bias_gradient)
+    
+    def _apply_dropout(self, runtime):
+        if runtime == 'train':
+            self._set_dropout_mask()
+            self.out *= self.dropout_mask
+        return self.out
+    
+    def _apply_batch_normalization(self, runtime):
+        # Apply batch normalization before nonlinearity
+        # Bias is included in beta parameter later, so not here
+        if runtime=='train':
+            # Mean and variance are estimated over batches
+            self.mean_wx = self.wx.mean(axis=1, keepdims=True)
+            self.var_wx = ((self.wx - self.mean_wx)**2).mean(axis=1, keepdims=True)
+            # Collect mean and variance for later use in testing
+            self.mean_wx_list.append(self.mean_wx)
+            self.var_wx_list.append(self.var_wx)
+            # Get normalised wx
+            self.norm_wx = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-8)
+            # Multiply by alpha and add beta parameter
+            self.x_hat = self.batchnorm_gamma * self.norm_wx + self.batchnorm_beta
+        else:
+            # During inference use population estimators
+            self.mean_wx = np.mean(self.mean_wx_list)
+            self.var_wx = np.mean(self.var_wx_list)
+            self.norm_wx = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-8)
+            self.x_hat = self.batchnorm_gamma * self.norm_wx + self.batchnorm_beta
         return
 
+    def update_weights(self, learning_rate, batch_size):
+        if self.is_trainable:
+            if self.batch_normalization:
+                self._update_batchnorm_parameters(learning_rate, batch_size)
+            self.weights = self.optimizer.update_weights(
+                self.weights, learning_rate, batch_size, self.gradient
+                )
+            if self.use_bias:
+                self.bias = self.optimizer.update_bias(
+                    self.bias, learning_rate, batch_size, self.bias_gradient
+                    )
+        return
+    
+    def _update_batchnorm_parameters(self, learning_rate, batch_size):
+        if not(self.batchnorm_optimizer):
+                self._set_batchnorm_optimizer()
+        self._set_batchnorm_gradients()
+        self.batchnorm_gamma = self.batchnorm_optimizer.update_weights(
+                self.batchnorm_gamma, learning_rate, batch_size, self.batchnorm_gamma_gradient
+                )
+        self.batchnorm_beta = self.batchnorm_optimizer.update_weights(
+                self.batchnorm_beta, learning_rate, batch_size, self.batchnorm_beta_gradient
+                )
+        # self.gradient = 0
+        # self.bias_gradient = 0
+        # self.error = 0
+        return
+    
+    def _set_batchnorm_gradients(self):
+        self.batchnorm_gamma_gradient = self.error.dot(self.norm_wx.T).sum(axis=1, keepdims=True)
+        self.batchnorm_beta_gradient = self.error.sum(axis=1, keepdims=True)
+        return
+    
     def set_next_layer(self, next_layer):
         self.next_layer = next_layer
         return
