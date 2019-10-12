@@ -1,19 +1,20 @@
 BUGFIXES:
-
-
+    
 
 TO CHECK:
+    -> working but understand implementations better
+    Check Softmax derivative
+    Check cross entropy
+
     Check minmax scaling implementation
     Check glorot normal and both he init implementations
     Check Dropout
 
 
 TO ADD:
-    Save and load weights
+    Remove Save and load weights
     Convolutional layer
     Batch normalization
-    CrossEntropy implementation that doesn't depend on Sigmoid in last layer
-    Softmax layer
     Deconvolutional layer
     Recurrent layer
     LSTM layer

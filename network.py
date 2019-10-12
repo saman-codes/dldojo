@@ -21,7 +21,6 @@ class Network():
     '''
     Base class for a neural network model
     '''
-
     def __init__(self,
         load_weights=False,
         ):
@@ -89,14 +88,6 @@ class Network():
                 for layer in reversed(self.layers):
                     if layer.is_output_layer:
                         dwx = layer.activation.derivative(layer.wx)
-                        if isinstance(self.loss, CrossEntropy):
-                            '''
-                            TODO: implement CE loss for all activations, not just sigmoid
-                            I think the dwx term become 1 only with sigmoid activation
-                            in the output layer
-                            '''
-                            # CrossEntropy loss cancels out the sigma' term
-                            dwx = 1
                         layer.error = self.loss.output_gradient(
                             output, minibatch_y) * dwx
                         layer.gradient = layer.error.dot(layer.x.T)

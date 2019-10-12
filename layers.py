@@ -72,7 +72,7 @@ class Layer():
         if self.batch_normalization:
             self._apply_batch_normalization(runtime)
             # Apply activation function to normalized output
-            self.out = self.activation(self.x_hat)
+            self.out = self.activation(self.y)
         else:
             # No batch normalization applied
             if self.use_bias:
@@ -106,16 +106,16 @@ class Layer():
             # Collect mean and variance for later use in testing
             self.mean_wx_list.append(self.mean_wx)
             self.var_wx_list.append(self.var_wx)
-            # Get normalised wx
-            self.norm_wx = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-8)
+            # Get normalised wx - Using var names from batchnorm paper
+            self.x_hat = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-8)
             # Multiply by alpha and add beta parameter
-            self.x_hat = self.batchnorm_gamma * self.norm_wx + self.batchnorm_beta
+            self.y = self.batchnorm_gamma * self.x_hat + self.batchnorm_beta
         else:
             # During inference use population estimators
             self.mean_wx = np.mean(self.mean_wx_list)
             self.var_wx = np.mean(self.var_wx_list)
-            self.norm_wx = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-8)
-            self.x_hat = self.batchnorm_gamma * self.norm_wx + self.batchnorm_beta
+            self.x_hat = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-8)
+            self.y = self.batchnorm_gamma * self.x_hat + self.batchnorm_beta
         return
 
     def update_weights(self, learning_rate, batch_size):
@@ -141,13 +141,21 @@ class Layer():
         self.batchnorm_beta = self.batchnorm_optimizer.update_weights(
                 self.batchnorm_beta, learning_rate, batch_size, self.batchnorm_beta_gradient
                 )
-        # self.gradient = 0
-        # self.bias_gradient = 0
-        # self.error = 0
+        # Update layer error
+        a = self.batchnorm_gamma / (batch_size * (np.sqrt(self.var_wx) + 1e-8))
+        b = batch_size * self.next_layer.error 
+        c = self.next_layer.error.sum(axis=1, keepdims=True)
+        d = (self.wx - self.mean_wx)/(self.var_wx + 1e-8)
+        e = (self.next_layer.error * (self.wx - self.mean_wx)).sum( axis=1, keepdims=True)
+        # This is dL/dwx
+        dldwx = a * (b - c  - d * e)
+        self.error = 0
+        # Not updating bias gradient since bias is not used 
+        _set_gradient()
         return
     
     def _set_batchnorm_gradients(self):
-        self.batchnorm_gamma_gradient = self.error.dot(self.norm_wx.T).sum(axis=1, keepdims=True)
+        self.batchnorm_gamma_gradient = self.error.dot(self.x_hat.T).sum(axis=1, keepdims=True)
         self.batchnorm_beta_gradient = self.error.sum(axis=1, keepdims=True)
         return
     
@@ -171,6 +179,7 @@ class Layer():
         dwx = self.activation.derivative(self.wx)
         if self.add_dropout:
             dwx *= self.dropout_mask
+        # Error <- next layer error * dwx
         self.error = self.next_layer.weights.T.dot(self.next_layer.error) * dwx
         return
 

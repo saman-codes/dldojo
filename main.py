@@ -273,6 +273,25 @@ def run_ff_with_adam():
     get_accuracy_mnist(x_test, y_test, net)
     plot_weights(net)
 
+def run_ff_with_softmax():
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    ins = 784
+    os = 10
+    hs = 100
+    bs = 1000
+    loss = CrossEntropy()
+    net = Network()
+    net.set_name('FF with Adam')
+    net.add(Feedforward(shape=(hs, ins)))
+    net.add(Output(shape=(os, hs), activation='softmax'))
+    net.train(x_train,  y_train, loss,
+            optimizer='adam', batch_size=bs,
+            learning_rate=1e-4, epochs=100,
+            plot_loss=True, regularizer=('L2', 0.5),
+            )
+    get_accuracy_mnist(x_test, y_test, net)
+    plot_weights(net)
+
 def run_ff_with_batchnorm():
     ins = 784
     os = 10
@@ -294,28 +313,6 @@ def run_ff_with_batchnorm():
     get_accuracy_mnist(x_test, y_test, net)
     # plot_weights(net)
 
-def save_weights_test():
-    # x_train, y_train, x_test, y_test = load_mnist(train_set_size=1000, test_set_size=100)
-    ins = 2
-    os = 10
-    hs = 3
-    bs = 2
-    train_set_size = bs*10
-    x_train = np.random.rand(ins, train_set_size)
-    x_test = np.random.rand(ins, bs)
-    y_train = np.ones((os, train_set_size))
-    y_test = np.ones((os, bs))
-    loss = CrossEntropy()
-    net = Network()
-    net.set_name('Save weights test')
-    net.add(Feedforward(shape=(hs, ins)))
-    net.add(Output(shape=(os, hs)))
-    net.train(x_train,  y_train, loss,
-            optimizer='adam', batch_size=bs,
-            learning_rate=1e-2, epochs=5,
-            save_weights=True
-            )
-
 if __name__ == '__main__':
     # run_autoencoder()
     # run_feedforward()
@@ -332,8 +329,8 @@ if __name__ == '__main__':
     # run_ff_with_adagrad()
     # run_ff_with_rmsprop()
     # run_ff_with_adam()
-    # save_weights_test()
-    run_ff_with_batchnorm()
+    # run_ff_with_softmax()
+    # run_ff_with_batchnorm()
 
 
 

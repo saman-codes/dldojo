@@ -8,7 +8,8 @@ import numpy as np
 class Activation():
     '''
     Base class for an activation layer
-    Inspired by https://github.com/eriklindernoren/ML-From-Scratch/blob/d8d86600be48117bb4d82f1f60c2d663248c0398/mlfromscratch/deep_learning/activation_functions.py
+    Inspired by 
+    https://github.com/eriklindernoren/ML-From-Scratch/blob/master/mlfromscratch/deep_learning/activation_functions.py
     '''
 
     def __call__(self, x):
@@ -63,8 +64,11 @@ class Sigmoid(Activation):
 class Softmax(Activation):
 
     def __call__(self, x):
-        return np.exp(x) / np.exp(x).sum(axis=0, keepdims=True)
+        # Using normalised x for numerical stability
+        norm_x = x - np.max(x, axis=0)
+        return np.exp(norm_x) / np.exp(norm_x).sum(axis=0, keepdims=True)
 
     def derivative(self, x):
-        # Softmax derivative not used when CrossEntropy loss is used
-        return
+        norm_x = x - np.max(x,axis=0)
+        return self.__call__(norm_x) * (1 - self.__call__(norm_x))
+        
