@@ -149,6 +149,7 @@ class Layer():
         e = (self.next_layer.error * (self.wx - self.mean_wx)).sum( axis=1, keepdims=True)
         # This is dL/dwx
         dldwx = a * (b - c  - d * e)
+        # What's the error?
         self.error = 0
         # Not updating bias gradient since bias is not used 
         _set_gradient()

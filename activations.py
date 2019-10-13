@@ -69,6 +69,5 @@ class Softmax(Activation):
         return np.exp(norm_x) / np.exp(norm_x).sum(axis=0, keepdims=True)
 
     def derivative(self, x):
-        norm_x = x - np.max(x,axis=0)
-        return self.__call__(norm_x) * (1 - self.__call__(norm_x))
+        return self.__call__(x) * (1 - self.__call__(x))
         
