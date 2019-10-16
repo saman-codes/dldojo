@@ -302,16 +302,18 @@ def run_ff_with_batchnorm():
     net = Network()
     net.set_name('FF with BatchNorm')
     net.add(Feedforward(shape=(hs, ins), batch_normalization=True))
-    net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
-    net.add(Output(shape=(os, hs)))
+    # net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
+    net.add(Output(shape=(os, hs), activation='softmax'))
     net.train(x_train,  y_train, loss,
             batch_size=bs,
-            learning_rate=1e-2,
-            epochs=10,
+            learning_rate=1e-1,
+            epochs=100,
+            plot_loss=True
             )
 
     get_accuracy_mnist(x_test, y_test, net)
-    # plot_weights(net)
+    plot_weights(net)
+    predict_random_mnist(x_test, y_test, net)
 
 if __name__ == '__main__':
     # run_autoencoder()

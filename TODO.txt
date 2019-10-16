@@ -1,6 +1,5 @@
 BUGFIXES:
     
-
 TO CHECK:
     -> working but understand implementations better
     Check Softmax derivative
