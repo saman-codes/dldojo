@@ -49,6 +49,7 @@ class Layer():
                 self.batchnorm_beta = np.zeros((self.shape[0], 1))
                 self.mean_wx_avg = 0
                 self.var_wx_avg = 0
+                self.batch_count = 0
                 self.batchnorm_optimizer = None
 
         def _init_bias():
@@ -105,15 +106,16 @@ class Layer():
             self.var_wx = ((self.wx - self.mean_wx)**2).mean(axis=1, keepdims=True)
             # Keep running average of mean and variance for use in testing
             self.mean_wx_avg += self.mean_wx
-            self.mean_wx_avg /= 2
             self.var_wx_avg += self.var_wx
-            self.var_wx_avg /= 2
+            self.batch_count += 1
             # Get normalised wx - Using var names from batchnorm paper
             self.x_hat = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-12)
             # Multiply by alpha and add beta parameter
             self.y = self.batchnorm_gamma * self.x_hat + self.batchnorm_beta
         else:
             # During inference use population estimators
+            self.mean_wx_avg /= self.batch_count
+            self.var_wx_avg /= self.batch_count
             self.x_hat = (self.wx - self.mean_wx_avg) / (np.sqrt(self.var_wx_avg) + 1e-12)
             self.y = self.batchnorm_gamma * self.x_hat + self.batchnorm_beta
         return
@@ -135,6 +137,8 @@ class Layer():
         if not(self.batchnorm_optimizer):
                 self._set_batchnorm_optimizer()
         self._set_batchnorm_gradients()
+        # Save gamma used in testing, use it for backpropagating the error
+        gamma = self.batchnorm_gamma
         self.batchnorm_gamma = self.batchnorm_optimizer.update_weights(
                 self.batchnorm_gamma, learning_rate, batch_size, self.batchnorm_gamma_gradient
                 )
@@ -143,16 +147,22 @@ class Layer():
                 )
         # Update layer error
         inverse_std = 1. / (np.sqrt(self.var_wx) + 1e-12)
-        a = 1. / batch_size  * self.batchnorm_gamma * inverse_std
+        a = 1. / batch_size  * gamma * inverse_std
         self.error = a * ( - self.batchnorm_gamma_gradient * self.x_hat 
                     + batch_size * self.error - self.batchnorm_beta_gradient
                     )
+
+        # (1 / batch_size) * gamma * self.stddev_inv * (
+        #     batch_size * accum_grad
+        #     - np.sum(accum_grad, axis=0)
+        #     - self.X_centered * self.stddev_inv**2 * np.sum(accum_grad * self.X_centered, axis=0)
+        #     )
         # Not updating bias gradient since bias is not used 
         self._set_gradient()
         return
     
     def _set_batchnorm_gradients(self):
-        self.batchnorm_gamma_gradient = self.error.dot(self.x_hat.T).sum(axis=1, keepdims=True)
+        self.batchnorm_gamma_gradient = (self.error * self.x_hat).sum(axis=1, keepdims=True)
         self.batchnorm_beta_gradient = self.error.sum(axis=1, keepdims=True)
         return
     

@@ -303,11 +303,11 @@ def run_ff_with_batchnorm():
     net.set_name('FF with BatchNorm')
     net.add(Feedforward(shape=(hs, ins)))
     net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
-    net.add(Output(shape=(os, hs), activation='softmax'))
+    net.add(Output(shape=(os, hs), activation='softmax')))
     net.train(x_train,  y_train, loss,
             optimizer='adam',
             batch_size=bs,
-            learning_rate=1e-4,
+            learning_rate=1e-3,
             epochs=250,
             plot_loss=True
             )
