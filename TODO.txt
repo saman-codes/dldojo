@@ -1,6 +1,7 @@
 BUGFIXES:
     
 TO CHECK:
+    Check why net with batchnorm does worst than same net without
     -> working but understand implementations better
     Check Softmax derivative
     Check cross entropy
@@ -11,6 +12,7 @@ TO CHECK:
 
 
 TO ADD:
+    Add batchnorm gamma and beta gradient checking
     Remove Save and load weights
     Convolutional layer
     Batch normalization

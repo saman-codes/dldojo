@@ -103,18 +103,18 @@ class Layer():
             # Mean and variance are estimated over batches
             self.mean_wx = self.wx.mean(axis=1, keepdims=True)
             self.var_wx = ((self.wx - self.mean_wx)**2).mean(axis=1, keepdims=True)
-            # Collect mean and variance for later use in testing
+            # Keep running average of mean and variance for use in testing
             self.mean_wx_avg += self.mean_wx
             self.mean_wx_avg /= 2
             self.var_wx_avg += self.var_wx
             self.var_wx_avg /= 2
             # Get normalised wx - Using var names from batchnorm paper
-            self.x_hat = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-8)
+            self.x_hat = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-12)
             # Multiply by alpha and add beta parameter
             self.y = self.batchnorm_gamma * self.x_hat + self.batchnorm_beta
         else:
             # During inference use population estimators
-            self.x_hat = (self.wx - self.mean_wx_avg) / (np.sqrt(self.var_wx_avg) + 1e-8)
+            self.x_hat = (self.wx - self.mean_wx_avg) / (np.sqrt(self.var_wx_avg) + 1e-12)
             self.y = self.batchnorm_gamma * self.x_hat + self.batchnorm_beta
         return
 
@@ -142,19 +142,11 @@ class Layer():
                 self.batchnorm_beta, learning_rate, batch_size, self.batchnorm_beta_gradient
                 )
         # Update layer error
-        # dxhat = self.batchnorm_gamma * self.next_layer.error
-        inverse_std = 1. / (np.sqrt(self.var_wx) + 1e-8)
-        # self.error = (1. / batch_size) * inverse_std * (
-        #             batch_size * dxhat - dxhat.sum(axis=1, keepdims=True) -
-        #             self.xhat * (dxhat * self.xhat).sum(axis=1, keepdims=True)
-        #         )
+        inverse_std = 1. / (np.sqrt(self.var_wx) + 1e-12)
         a = 1. / batch_size  * self.batchnorm_gamma * inverse_std
-        dLdgamma = self.error.dot(self.x_hat.T).sum(axis=1, keepdims=True)
-        dLdbeta = self.error.sum(axis=1, keepdims=True)
-        self.error = a * ( - dLdgamma * self.x_hat + batch_size * 
-                    self.error.sum(axis=1, keepdims=True) - dLdbeta
+        self.error = a * ( - self.batchnorm_gamma_gradient * self.x_hat 
+                    + batch_size * self.error - self.batchnorm_beta_gradient
                     )
-        
         # Not updating bias gradient since bias is not used 
         self._set_gradient()
         return
@@ -184,7 +176,6 @@ class Layer():
         dwx = self.activation.derivative(self.wx)
         if self.add_dropout:
             dwx *= self.dropout_mask
-        # Error <- next layer error * dwx
         self.error = self.next_layer.weights.T.dot(self.next_layer.error) * dwx
         return
 
