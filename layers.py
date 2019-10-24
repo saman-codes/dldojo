@@ -47,9 +47,7 @@ class Layer():
                 # Initialize gamma to 0 and beta to 1
                 self.batchnorm_gamma = np.ones((self.shape[0], 1))
                 self.batchnorm_beta = np.zeros((self.shape[0], 1))
-                self.mean_wx_avg = 0
-                self.var_wx_avg = 0
-                self.batch_count = 0
+                self.mean_wx_avg, self.var_wx_avg = (0, 0)
                 self.batchnorm_optimizer = None
 
         def _init_bias():
@@ -90,14 +88,14 @@ class Layer():
         self._set_gradient()
         self._set_bias_gradient()
         return
-    
+
     def _apply_dropout(self, runtime):
         if runtime == 'train':
             self._set_dropout_mask()
             self.out *= self.dropout_mask
         return self.out
-    
-    def _apply_batch_normalization(self, runtime):
+
+    def _apply_batch_normalization(self, runtime, momentum=0.99):
         # Apply batch normalization before nonlinearity
         # Bias is included in beta parameter later, so not here
         if runtime=='train':
@@ -105,17 +103,14 @@ class Layer():
             self.mean_wx = self.wx.mean(axis=1, keepdims=True)
             self.var_wx = ((self.wx - self.mean_wx)**2).mean(axis=1, keepdims=True)
             # Keep running average of mean and variance for use in testing
-            self.mean_wx_avg += self.mean_wx
-            self.var_wx_avg += self.var_wx
-            self.batch_count += 1
+            self.mean_wx_avg = momentum*self.mean_wx_avg + (1-momentum)*self.mean_wx
+            self.var_wx_avg = momentum*self.var_wx_avg + (1-momentum)*self.var_wx
             # Get normalised wx - Using var names from batchnorm paper
             self.x_hat = (self.wx - self.mean_wx) / (np.sqrt(self.var_wx) + 1e-12)
             # Multiply by alpha and add beta parameter
             self.y = self.batchnorm_gamma * self.x_hat + self.batchnorm_beta
         else:
-            # During inference use population estimators
-            self.mean_wx_avg /= self.batch_count
-            self.var_wx_avg /= self.batch_count
+            # For testing, use collected moving averages
             self.x_hat = (self.wx - self.mean_wx_avg) / (np.sqrt(self.var_wx_avg) + 1e-12)
             self.y = self.batchnorm_gamma * self.x_hat + self.batchnorm_beta
         return
@@ -132,12 +127,12 @@ class Layer():
                     self.bias, learning_rate, batch_size, self.bias_gradient
                     )
         return
-    
+
     def _update_batchnorm_parameters(self, learning_rate, batch_size):
         if not(self.batchnorm_optimizer):
                 self._set_batchnorm_optimizer()
         self._set_batchnorm_gradients()
-        # Save gamma used in testing, use it for backpropagating the error
+        # Save gamma parameter before updating it - use for backpropagation
         gamma = self.batchnorm_gamma
         self.batchnorm_gamma = self.batchnorm_optimizer.update_weights(
                 self.batchnorm_gamma, learning_rate, batch_size, self.batchnorm_gamma_gradient
@@ -147,25 +142,19 @@ class Layer():
                 )
         # Update layer error
         inverse_std = 1. / (np.sqrt(self.var_wx) + 1e-12)
-        a = 1. / batch_size  * gamma * inverse_std
-        self.error = a * ( - self.batchnorm_gamma_gradient * self.x_hat 
+        self.error = 1. / batch_size  * gamma * inverse_std * (
+                    - self.batchnorm_gamma_gradient * self.x_hat
                     + batch_size * self.error - self.batchnorm_beta_gradient
                     )
-
-        # (1 / batch_size) * gamma * self.stddev_inv * (
-        #     batch_size * accum_grad
-        #     - np.sum(accum_grad, axis=0)
-        #     - self.X_centered * self.stddev_inv**2 * np.sum(accum_grad * self.X_centered, axis=0)
-        #     )
-        # Not updating bias gradient since bias is not used 
+        # Not updating bias gradient since bias is not used
         self._set_gradient()
         return
-    
+
     def _set_batchnorm_gradients(self):
         self.batchnorm_gamma_gradient = (self.error * self.x_hat).sum(axis=1, keepdims=True)
         self.batchnorm_beta_gradient = self.error.sum(axis=1, keepdims=True)
         return
-    
+
     def set_next_layer(self, next_layer):
         self.next_layer = next_layer
         return

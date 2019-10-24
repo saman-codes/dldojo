@@ -297,7 +297,7 @@ def run_ff_with_batchnorm():
     os = 10
     hs = 100
     bs = 1000
-    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=bs)
     loss = CrossEntropy()
     net = Network()
     net.set_name('FF with BatchNorm')
@@ -307,14 +307,14 @@ def run_ff_with_batchnorm():
     net.train(x_train,  y_train, loss,
             optimizer='adam',
             batch_size=bs,
-            learning_rate=1e-3,
-            epochs=250,
-            plot_loss=True
+            learning_rate=1e-2,
+            epochs=25,
+            plot_loss=True,
             )
 
     get_accuracy_mnist(x_test, y_test, net)
     # plot_weights(net)
-    predict_random_mnist(x_test, y_test, net)
+    # predict_random_mnist(x_test, y_test, net)
 
 if __name__ == '__main__':
     # run_autoencoder()
