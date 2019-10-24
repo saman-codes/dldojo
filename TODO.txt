@@ -1,6 +1,8 @@
 BUGFIXES:
     
 TO CHECK:
+
+    can replace batch size parameter in layer functions with batch_size = self.error.shape[1]
     Check why net with batchnorm does worst than same net without
     -> working but understand implementations better
     Check Softmax derivative
