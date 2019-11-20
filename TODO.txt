@@ -1,5 +1,5 @@
 BUGFIXES:
-    
+
 TO CHECK:
 
     can replace batch size parameter in layer functions with batch_size = self.error.shape[1]
@@ -14,10 +14,11 @@ TO CHECK:
 
 
 TO ADD:
+    Replace Output layer with no weights, just output activation?
+    Convolutional layer
+
     Add batchnorm gamma and beta gradient checking
     Remove Save and load weights
-    Convolutional layer
-    Batch normalization
     Deconvolutional layer
     Recurrent layer
     LSTM layer

@@ -12,7 +12,7 @@ class MSE(Loss):
     def output_gradient(self, predicted, labels):
         return predicted - labels
 
-class CrossEntropy(Loss):
+class BinaryCrossEntropy(Loss):
     def __call__(self, predicted, labels):
         return -np.nan_to_num((labels*np.log(predicted) + (1-labels)*np.log(1-predicted)))
 

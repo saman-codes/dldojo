@@ -96,7 +96,8 @@ class Layer():
         return self.out
 
     def _apply_batch_normalization(self, runtime, momentum=0.99):
-        # Apply batch normalization before nonlinearity
+        # We batch normalization before nonlinearity, so we add it
+        # inside the layer, instead of creating a new layer
         # Bias is included in beta parameter later, so not here
         if runtime=='train':
             # Mean and variance are estimated over batches
@@ -218,11 +219,26 @@ class Convolutional(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # Check that layer has at least 3 dimensions
-        assert(len(self.shape) > 2)
+        # assert(len(self.shape) > 2)
         return
 
-    def forward():
+    def forward(self, x, runtime):
+        # Im2Col
+        x_col = self.im2col(x)
+        # Create Kernel matrix
+        # Dot product of kernel matrix with transposed Im2Col'ed input image
+        # Each column in the resulting matrix is a feature map
         return
 
-    def backward():
+    def backward(self):
+        return
+
+    @staticmethod
+    def im2col(x, kernel_size=3, stride=1):
+
+        x.reshape()
+        return
+
+    @staticmethod
+    def kernel2row(x):
         return

@@ -27,9 +27,11 @@ class Network():
         self.__name__ = 'GenericNetwork'
         self.layers = list()
         self.load_weights = load_weights
+        return
 
     def set_name(self, name):
         self.__name__ = name
+        return self
 
     def train(self, x, y, loss,
                 batch_size=1,
@@ -119,6 +121,8 @@ class Network():
                 pickle.dump(weights_list, fname)
                 logging.info(f'Weights saved on file {fname}')
 
+        return self
+
     def _add_regularization_term(self, layer):
         if self.regularizer == 'L2':
             # Derivative of the squared weights, so we lose the power of 2
@@ -144,11 +148,12 @@ class Network():
             self.layers.append(layer)
         else:
             raise Exception
+        return self
 
     def set_optimizer(self, optimizer):
         for layer in self.layers:
             layer.set_optimizer(optimizer)
-        return
+        return self
 
 
     def get_minibatch(self, x, y):
