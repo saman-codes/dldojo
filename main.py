@@ -1,6 +1,6 @@
 # Local
 from network import Network
-from losses import MSE, CrossEntropy
+from losses import MSE, BinaryCrossEntropy, CategoricalCrossEntropy
 from layers import Feedforward, Output, Convolutional
 from utils import load_mnist, predict_random_mnist, get_accuracy_mnist, plot_weights, plot_random_mnist_autoencoder
 
@@ -13,7 +13,7 @@ def run_autoencoder():
     ins = 784
     os = 784
     bs = 5000
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('Autoencoder')
     net.add(Feedforward(shape=(250, ins)))
@@ -36,7 +36,7 @@ def run_feedforward_gradient_checking():
                         weight_init='glorot_uniform')
     okwargs = dict(activation='sigmoid',use_bias=True, bias_init='zeros',
                     weight_init='glorot_uniform')
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.add(Feedforward(shape=(hs, ins), **ffkwargs))
     net.add(Feedforward(shape=(hs, hs), **ffkwargs))
@@ -48,7 +48,7 @@ def run_feedforward_gradient_checking():
 def run_feedforward():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=50000, test_set_size=10000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('Simple Feedforward Network')
     ffkwargs = dict(activation='relu')
@@ -65,7 +65,7 @@ def run_feedforward():
 def run_ff_with_regularization():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('Simple Feedforward Network')
     ffkwargs = dict(activation='relu')
@@ -82,7 +82,7 @@ def run_ff_with_regularization():
 def run_ff_with_dropout():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     ffkwargs = dict(activation='relu', dropout=True)
     okwargs = dict(activation='sigmoid')
@@ -96,7 +96,7 @@ def run_ff_with_dropout():
 def run_ff_with_minmax_scaling():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     ffkwargs = dict(activation='sigmoid', weight_init='ones', preprocessing=['minmax_scaling'])
     okwargs = dict(activation='sigmoid', bias_init='zeros', weight_init='ones')
@@ -110,7 +110,7 @@ def run_ff_with_minmax_scaling():
 def run_ff_with_momentum():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.add(Feedforward(shape=(hs, ins)))
     net.add(Feedforward(shape=(hs, hs)))
@@ -125,7 +125,7 @@ def run_ff_with_momentum():
 def run_ff_with_nesterov_momentum():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('FF with nesterov momentum')
     net.add(Feedforward(shape=(hs, ins)))
@@ -143,7 +143,7 @@ def run_no_hidden_layer_ff():
     ins = 784
     os = 10
     bs = 1000
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('No hidden layer NN')
     net.add(Output(shape=(os, ins)))
@@ -158,7 +158,7 @@ def run_no_hidden_layer_ff():
 def run_two_hidden_layers_ff_relu():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('Two hidden layers NN with Relu')
     ffkwargs = dict(activation='relu')
@@ -193,7 +193,7 @@ def run_no_hidden_layer_ff_relu():
 def run_ff_with_adagrad():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('FF with Adagrad')
     net.add(Feedforward(shape=(hs, ins)))
@@ -209,7 +209,7 @@ def run_ff_with_adagrad():
 def run_ff_with_rmsprop():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('FF with Rmsprop')
     net.add(Feedforward(shape=(hs, ins)))
@@ -227,7 +227,7 @@ def run_ff_with_rmsprop():
 def run_ff_with_adam():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('FF with Adam')
     net.add(Feedforward(shape=(hs, ins)))
@@ -243,7 +243,7 @@ def run_ff_with_adam():
 def run_ff_with_softmax():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = CategoricalCrossEntropy()
     net = Network()
     net.set_name('FF with Adam')
     net.add(Feedforward(shape=(hs, ins)))
@@ -259,7 +259,7 @@ def run_ff_with_softmax():
 def run_ff_with_batchnorm():
     ins, os, hs, bs = (784, 10, 100, 1000)
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=bs)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('FF with BatchNorm')
     net.add(Feedforward(shape=(hs, ins)))
@@ -282,7 +282,7 @@ def run_ff_with_batchnorm():
 def run_cnn():
     x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
     ins, os, hs, bs = (784, 10, 100, 1000)
-    loss = CrossEntropy()
+    loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('CNN')
     net.add(Convolutional(shape=(hs, ins)))
@@ -313,9 +313,9 @@ if __name__ == '__main__':
     # run_ff_with_adagrad()
     # run_ff_with_rmsprop()
     # run_ff_with_adam()
-    # run_ff_with_softmax()
+    run_ff_with_softmax()
     # run_ff_with_batchnorm()
-    run_cnn()
+    # run_cnn()
 
 
 
