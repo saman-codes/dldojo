@@ -245,16 +245,18 @@ def run_ff_with_softmax():
     ins, os, hs, bs = (784, 10, 100, 1000)
     loss = CategoricalCrossEntropy()
     net = Network()
-    net.set_name('FF with Adam')
+    net.set_name('FF with Softmax')
     net.add(Feedforward(shape=(hs, ins)))
+    net.add(Feedforward(shape=(hs, hs)))
     net.add(Output(shape=(os, hs), activation='softmax'))
     net.train(x_train,  y_train, loss,
             optimizer='adam', batch_size=bs,
-            learning_rate=1e-4, epochs=100,
-            plot_loss=True, regularizer=('L2', 0.5),
+            learning_rate=1e-2, epochs=50,
+            plot_loss=True,
             )
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
+    predict_random_mnist(x_test, y_test, net)
+
 
 def run_ff_with_batchnorm():
     ins, os, hs, bs = (784, 10, 100, 1000)
@@ -263,15 +265,15 @@ def run_ff_with_batchnorm():
     net = Network()
     net.set_name('FF with BatchNorm')
     net.add(Feedforward(shape=(hs, ins)))
-    net.add(Feedforward(shape=(hs, hs), batch_normalization=False))
-    net.add(Feedforward(shape=(hs, hs), batch_normalization=False))
-    net.add(Feedforward(shape=(hs, hs), batch_normalization=False))
+    net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
+    net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
+    net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
     net.add(Output(shape=(os, hs), activation='softmax'))
     net.train(x_train,  y_train, loss,
             optimizer='adam',
             batch_size=bs,
             learning_rate=1e-2,
-            epochs=25,
+            epochs=50,
             plot_loss=True,
             )
 
