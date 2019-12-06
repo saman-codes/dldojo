@@ -87,16 +87,11 @@ class Network():
                     logging.info(f'Training loss: {loss}')
 
                 # Training step
+                next_layer = None
+                self.layers[-1].output_gradient = self.loss.output_gradient(output, minibatch_y)
                 for layer in reversed(self.layers):
-                    if layer.is_output_layer:
-                        dwx = layer.activation.derivative(layer.wx)
-                        layer.error = self.loss.output_gradient(
-                            output, minibatch_y) * dwx
-                        layer.gradient = layer.error.dot(layer.x.T)
-                        layer.bias_gradient = layer.error.sum(axis=1, keepdims=True)
-                    else:
-                        layer.set_next_layer(next_layer)
-                        layer.backward()
+                    layer.set_next_layer(next_layer)
+                    layer.backward()
                     if self.regularizer:
                         self._add_regularization_term(layer)
                     if gradient_check:

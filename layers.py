@@ -176,7 +176,11 @@ class Layer():
         dwx = self.activation.derivative(self.wx)
         if self.add_dropout:
             dwx *= self.dropout_mask
-        self.error = self.next_layer.weights.T.dot(self.next_layer.error) * dwx
+        if self.is_output_layer:
+            backward_gradient = self.output_gradient
+        else:
+            backward_gradient = self.next_layer.weights.T.dot(self.next_layer.error) 
+        self.error = backward_gradient * dwx
         return
 
     def _set_gradient(self):
