@@ -218,16 +218,28 @@ class Output(Layer):
 class Convolutional(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Check that layer has at least 3 dimensions
-        # assert(len(self.shape) > 2)
+        '''
+        Check that layer has exactly 2 dimensions
+        Dimensions are (filter_size, input_size)
+        where input_size is height*width, and the image is single channel
+        The input to the convolutional layer is an input_size * batch_size matrix
+        where each column is a single one-channel input image
+        '''
+        use_bias = False
+        try:
+            assert(len(self.shape) == 2)
+        except:
+            raise Exception(f'Convolutional layer {self} must have 2 dimensions; found {len(self.shape)} instead')
         return
 
     def forward(self, x, runtime):
-        # Im2Col
+        # Apply Im2Col operation
         x_col = self.im2col(x)
         # Create Kernel matrix
         # Dot product of kernel matrix with transposed Im2Col'ed input image
         # Each column in the resulting matrix is a feature map
+        # Apply nonlinearity
+        # Reshape back to 3 dimensions
         return
 
     def backward(self):
@@ -235,7 +247,7 @@ class Convolutional(Layer):
 
     @staticmethod
     def im2col(x, kernel_size=3, stride=1):
-
+        # x[:kernel_size] = []
         x.reshape()
         return
 

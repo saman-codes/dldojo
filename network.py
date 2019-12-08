@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 # Local
 from layers import Layer
-from losses import BinaryCrossEntropy
+from losses import CrossEntropy
 
 # Thirdparty
 import logging
