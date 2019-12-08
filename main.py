@@ -287,7 +287,7 @@ def run_ff_with_batchnorm():
 def run_cnn():
     # x_train, y_train, x_test, y_test = load_mnist(train_set_size=1, test_set_size=1)
     # fs, ins, os, hs, bs = (64, 784, 10, 100, 1)
-    fs, ins, os, hs, bs = (64, 12, 1, 1, 1)
+    fs, ins, os, hs, bs = (64, 16, 1, 1, 1)
     x_train = np.arange(16).reshape((16,1))
     y_train = np.zeros((1,1))
     loss = CrossEntropy()
@@ -312,7 +312,7 @@ if __name__ == '__main__':
     # run_feedforward_gradient_checking()
     # run_ff_with_dropout()
     # run_ff_with_regularization()
-    run_ff_with_minmax_scaling()
+    # run_ff_with_minmax_scaling()
     # run_ff_with_momentum()
     # run_ff_with_nesterov_momentum()
     # run_no_hidden_layer_ff()
@@ -324,7 +324,7 @@ if __name__ == '__main__':
     # run_ff_with_adam()
     # run_ff_with_softmax()
     # run_ff_with_batchnorm()
-    # run_cnn()
+    run_cnn()
 
 
 
