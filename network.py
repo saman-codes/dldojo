@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 # Local
 from layers import Layer
-from losses import BinaryCrossEntropy
+from losses import CrossEntropy
 
 # Thirdparty
 import logging
@@ -87,11 +87,9 @@ class Network():
                     logging.info(f'Training loss: {loss}')
 
                 # Training step
-                next_layer = None
-                self.layers[-1].output_gradient = self.loss.output_gradient(output, minibatch_y)
+                backward_gradient = self.loss.output_gradient(output, minibatch_y)
                 for layer in reversed(self.layers):
-                    layer.set_next_layer(next_layer)
-                    layer.backward()
+                    backward_gradient = layer.backward(backward_gradient)
                     if self.regularizer:
                         self._add_regularization_term(layer)
                     if gradient_check:
@@ -99,7 +97,6 @@ class Network():
                     else:
                         # Do not update the weights if checking the gradients
                         layer.update_weights(learning_rate, self.batch_size)
-                    next_layer = layer
 
             # Save training loss at end of epoch for plotting
             self.training_loss.append((epoch, loss))

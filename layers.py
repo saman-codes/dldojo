@@ -83,11 +83,12 @@ class Layer():
             self.out = self._apply_dropout(runtime)
         return self.out
 
-    def backward(self):
+    def backward(self, backward_gradient):
+        self._set_backward_gradient(backward_gradient)
         self._set_error()
         self._set_gradient()
         self._set_bias_gradient()
-        return
+        return self.weights.T.dot(self.error)
 
     def _apply_dropout(self, runtime):
         if runtime == 'train':
@@ -155,9 +156,9 @@ class Layer():
         self.batchnorm_gamma_gradient = (self.error * self.x_hat).sum(axis=1, keepdims=True)
         self.batchnorm_beta_gradient = self.error.sum(axis=1, keepdims=True)
         return
-
-    def set_next_layer(self, next_layer):
-        self.next_layer = next_layer
+    
+    def _set_backward_gradient(self, backward_gradient):
+        self.backward_gradient = backward_gradient
         return
 
     def set_optimizer(self, optimizer):
@@ -176,11 +177,7 @@ class Layer():
         dwx = self.activation.derivative(self.wx)
         if self.add_dropout:
             dwx *= self.dropout_mask
-        if self.is_output_layer:
-            backward_gradient = self.output_gradient
-        else:
-            backward_gradient = self.next_layer.weights.T.dot(self.next_layer.error) 
-        self.error = backward_gradient * dwx
+        self.error = self.backward_gradient * dwx
         return
 
     def _set_gradient(self):
@@ -222,17 +219,43 @@ class Output(Layer):
 class Convolutional(Layer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        # Check that layer has at least 3 dimensions
-        # assert(len(self.shape) > 2)
+        '''
+        Check that layer has exactly 2 dimensions
+        Dimensions are (filter_size, input_size)
+        where input_size is height*width, and the image is single channel
+        The input to the convolutional layer is an input_size * batch_size matrix
+        where each column is a single one-channel input image
+        '''
+        use_bias = False
+        try:
+            assert(len(self.shape) == 2)
+        except:
+            raise Exception(f'Convolutional layer {self} must have 2 dimensions; found {len(self.shape)} instead')
         return
 
     def forward(self, x, runtime):
-        # Im2Col
+        self.x = self._preprocessing(x)
+        # Apply Im2Col operation
         x_col = self.im2col(x)
         # Create Kernel matrix
         # Dot product of kernel matrix with transposed Im2Col'ed input image
         # Each column in the resulting matrix is a feature map
-        return
+        self.wx = self.weights.dot(self.x)
+        
+        # if self.batch_normalization:
+        #     self._apply_batch_normalization(runtime)
+        #     # Apply activation function to normalized output
+        #     self.out = self.activation(self.y)
+        
+        # Apply activation function
+        self.out = self.activation(self.wx)
+        # Apply dropout
+        if self.add_dropout:
+            self.out = self._apply_dropout(runtime)
+
+        # Reshape back to 3 dimensions
+
+        return self.out
 
     def backward(self):
         return
@@ -240,8 +263,28 @@ class Convolutional(Layer):
     @staticmethod
     def im2col(x, kernel_size=3, stride=1):
 
-        x.reshape()
-        return
+        # M,N = A.shape
+        # col_extent = N - BSZ[1] + 1
+        # row_extent = M - BSZ[0] + 1
+
+        # # Get Starting block indices
+        # start_idx = np.arange(BSZ[0])[:,None]*N + np.arange(BSZ[1])
+
+        # # Get offsetted indices across the height and width of input array
+        # offset_idx = np.arange(row_extent)[:,None]*N + np.arange(col_extent)
+
+        # # Get all actual indices & index into input array for final output
+        # return np.take (A,start_idx.ravel()[:,None] + offset_idx.ravel()[::stepsize])
+
+        imsize, bs = x.shape
+        imsize = np.sqrt(imsize).astype(np.int64)
+        # Number of times filter is convolved on each side of image
+        num_windows = 2
+        # Reshape and filter flattened image so that each conv window is a column
+        v_index = np.arange(0, num_windows, stride).reshape(1,-1)
+        h_index = np.arange(kernel_size**2).reshape(-1,1) 
+        x = x[v_index, h_index]  
+        return x
 
     @staticmethod
     def kernel2row(x):
