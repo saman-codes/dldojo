@@ -70,7 +70,7 @@ class Softmax(Activation):
 
     def derivative(self, x):
         s = self.__call__(x)
-        a = s.T.dot(np.eye(s.shape[0])) - s.dot(s.T)
-        a = a[:,:,np.newaxis]
-        return a
+        jacobian_s = np.diag(s[:,0]) - s.dot(s.T)
+        # return batch_jacobian_s
+        return 
         
