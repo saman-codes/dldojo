@@ -244,8 +244,8 @@ def run_ff_with_adam():
     plot_weights(net)
 
 def run_ff_with_softmax():
-    x_train, y_train, x_test, y_test = load_mnist(train_set_size=1000, test_set_size=1000)
-    ins, os, hs, bs = (784, 10, 100, 2)
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000, test_set_size=1000)
+    ins, os, hs, bs = (784, 10, 100, 1000)
     loss = CategoricalCrossEntropy()
     net = Network()
     net.set_name('FF with Softmax')
@@ -254,7 +254,8 @@ def run_ff_with_softmax():
     net.add(Output(shape=(os, hs), activation='softmax'))
     net.train(x_train,  y_train, loss,
             batch_size=bs,
-            learning_rate=1e-2, epochs=25,
+            learning_rate=1, 
+            epochs=25,
             plot_loss=True,
             )
     get_accuracy_mnist(x_test, y_test, net)

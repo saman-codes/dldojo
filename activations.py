@@ -69,8 +69,11 @@ class Softmax(Activation):
         return np.exp(norm_x) / np.exp(norm_x).sum(axis=0, keepdims=True)
 
     def derivative(self, x):
-        s = self.__call__(x)
-        jacobian_s = np.diag(s[:,0]) - s.dot(s.T)
-        # return batch_jacobian_s
-        return 
-        
+        batch_jacobian = np.apply_along_axis(
+            lambda col: np.diag(col) - np.outer(col, col), 
+            0,
+            self.__call__(x)
+        )
+        return batch_jacobian
+
+

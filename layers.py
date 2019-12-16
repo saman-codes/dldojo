@@ -177,7 +177,16 @@ class Layer():
         dwx = self.activation.derivative(self.wx)
         if self.add_dropout:
             dwx *= self.dropout_mask
-        self.error = self.backward_gradient * dwx
+        if len(dwx.shape) == 2:
+            # If d(wx) is elementwise, use hadamard product
+            self.error = self.backward_gradient * dwx
+        else:
+            # else use dot product of each col (one batch element) with the matrices 
+            # on the diagonal of the full jacobian (off-diagonal entries are zero matrices)
+            _, bs = self.backward_gradient.shape
+            self.error = np.array(
+                [self.backward_gradient[:,i].dot(dwx[:,:,i]) for i in range(bs)], 
+            ).T
         return
 
     def _set_gradient(self):
