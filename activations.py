@@ -70,10 +70,7 @@ class Softmax(Activation):
 
     def derivative(self, x):
         batch_jacobian = np.apply_along_axis(
-            lambda col: np.diag(col) - np.outer(col, col), 
-            0,
-            self.__call__(x)
-        )
+            lambda col: np.diag(col) - np.outer(col, col), 0, self.__call__(x))
         return batch_jacobian
 
 

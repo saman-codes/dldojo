@@ -248,13 +248,14 @@ def run_ff_with_softmax():
     ins, os, hs, bs = (784, 10, 100, 1000)
     loss = CategoricalCrossEntropy()
     net = Network()
-    net.set_name('FF with Softmax')
-    net.add(Feedforward(shape=(hs, ins)))
-    net.add(Feedforward(shape=(hs, hs)))
+    net.set_name('FF with Softmax and Categorical Cross Entropy')
+    net.add(Feedforward(shape=(hs, ins), activation='relu'))
+    net.add(Feedforward(shape=(hs, hs), activation='relu'))
     net.add(Output(shape=(os, hs), activation='softmax'))
     net.train(x_train,  y_train, loss,
             batch_size=bs,
-            learning_rate=1, 
+            optimizer='adam',
+            learning_rate=1e-2, 
             epochs=25,
             plot_loss=True,
             )
@@ -282,8 +283,8 @@ def run_ff_with_batchnorm():
             )
 
     get_accuracy_mnist(x_test, y_test, net)
-    # plot_weights(net)
-    # predict_random_mnist(x_test, y_test, net)
+    plot_weights(net)
+    predict_random_mnist(x_test, y_test, net)
 
 def run_cnn():
     # x_train, y_train, x_test, y_test = load_mnist(train_set_size=1, test_set_size=1)
@@ -323,9 +324,9 @@ if __name__ == '__main__':
     # run_ff_with_adagrad()
     # run_ff_with_rmsprop()
     # run_ff_with_adam()
-    run_ff_with_softmax()
+    # run_ff_with_softmax()
     # run_ff_with_batchnorm()
-    # run_cnn()
+    run_cnn()
 
 
 
