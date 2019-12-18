@@ -270,30 +270,33 @@ class Convolutional(Layer):
         return
 
     @staticmethod
-    def im2col(x, kernel_size=3, stride=1):
+    def im2col(x, kernel_size=5, stride=1, padding=0):
+        side_squared, bs = x.shape
+        side = int(np.sqrt(side_squared))
+        def _get_col(img, **kwargs):
+            ks = kwargs.get('kernel_size')
+            p = kwargs.get('padding')
+            s = kwargs.get('stride')
+            h, w = img.shape
+            # num_windows_h = int((h-ks+2*p)/s)
+            # num_windows_w = int((w-2*p+ks)/s)
+            # num_windows = int(2*side/(ks-s))+1
+            num_windows = 576
+            im2c = np.zeros(shape=(ks**2, num_windows))
+            i,col_idx =(0,0)
+            while i+ks <= w:
+                j=0
+                while j+ks <= h:
+                    im2c[:, col_idx] = img[i:i+ks, j:j+ks].reshape(-1,)
+                    col_idx += 1
+                    j += s
+                i += s
+            return im2c
 
-        # M,N = A.shape
-        # col_extent = N - BSZ[1] + 1
-        # row_extent = M - BSZ[0] + 1
-
-        # # Get Starting block indices
-        # start_idx = np.arange(BSZ[0])[:,None]*N + np.arange(BSZ[1])
-
-        # # Get offsetted indices across the height and width of input array
-        # offset_idx = np.arange(row_extent)[:,None]*N + np.arange(col_extent)
-
-        # # Get all actual indices & index into input array for final output
-        # return np.take (A,start_idx.ravel()[:,None] + offset_idx.ravel()[::stepsize])
-
-        imsize, bs = x.shape
-        imsize = np.sqrt(imsize).astype(np.int64)
-        # Number of times filter is convolved on each side of image
-        num_windows = 2
-        # Reshape and filter flattened image so that each conv window is a column
-        v_index = np.arange(0, num_windows, stride).reshape(1,-1)
-        h_index = np.arange(kernel_size**2).reshape(-1,1) 
-        x = x[v_index, h_index]  
-        return x
+        x_r = x.reshape(side, side, bs)
+        kwargs = dict(kernel_size=kernel_size, padding=padding, stride=stride)
+        im2c = np.array([_get_col(x_r[:,:,b], **kwargs) for b in range(bs)])
+        return im2c
 
     @staticmethod
     def kernel2row(x):

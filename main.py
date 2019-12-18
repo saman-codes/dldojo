@@ -287,11 +287,11 @@ def run_ff_with_batchnorm():
     predict_random_mnist(x_test, y_test, net)
 
 def run_cnn():
-    # x_train, y_train, x_test, y_test = load_mnist(train_set_size=1, test_set_size=1)
-    # fs, ins, os, hs, bs = (64, 784, 10, 100, 1)
-    fs, ins, os, hs, bs = (64, 16, 1, 1, 1)
-    x_train = np.arange(16).reshape((16,1))
-    y_train = np.zeros((1,1))
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=1, test_set_size=1)
+    fs, ins, os, hs, bs = (64, 784, 10, 100, 1)
+    # fs, ins, os, hs, bs = (64, 16, 1, 1, 1)
+    # x_train = np.arange(16).reshape((16,1))
+    # y_train = np.zeros((1,1))
     loss = BinaryCrossEntropy()
     net = Network()
     net.set_name('CNN')
