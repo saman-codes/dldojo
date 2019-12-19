@@ -278,10 +278,7 @@ class Convolutional(Layer):
             p = kwargs.get('padding')
             s = kwargs.get('stride')
             h, w = img.shape
-            # num_windows_h = int((h-ks+2*p)/s)
-            # num_windows_w = int((w-2*p+ks)/s)
-            # num_windows = int(2*side/(ks-s))+1
-            num_windows = 576
+            num_windows = int((side+2*p-ks/(s)+1)**2)
             im2c = np.zeros(shape=(ks**2, num_windows))
             i,col_idx =(0,0)
             while i+ks <= w:
