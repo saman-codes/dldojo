@@ -28,6 +28,7 @@ class Layer():
                  dropout=1.,
                  batch_normalization=False,
                  preprocessing=list(),
+                 **kwargs,
     ):
 
         self.is_trainable = is_trainable
@@ -183,9 +184,10 @@ class Layer():
         else:
             # else use dot product of each col (one batch element) with the matrices 
             # on the diagonal of the full jacobian (off-diagonal entries are zero matrices)
+            # Used for categorical cross entropy backprop
             _, bs = self.backward_gradient.shape
             self.error = np.array(
-                [self.backward_gradient[:,i].dot(dwx[:,:,i]) for i in range(bs)], 
+                [self.backward_gradient[:,i].dot(dwx[:,:,i]) for i in range(bs)],
             ).T
         return
 
@@ -227,46 +229,56 @@ class Output(Layer):
 
 class Convolutional(Layer):
     def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        '''
-        Check that layer has exactly 2 dimensions
-        Dimensions are (filter_size, input_size)
-        where input_size is height*width, and the image is single channel
-        The input to the convolutional layer is an input_size * batch_size matrix
-        where each column is a single one-channel input image
-        '''
-        use_bias = False
-        try:
-            assert(len(self.shape) == 2)
-        except:
-            raise Exception(f'Convolutional layer {self} must have 2 dimensions; found {len(self.shape)} instead')
+        self.image_side = kwargs.get('image_side', 28)
+        self.num_filters = kwargs.get('num_filters', 12)
+        self.kernel_size = kwargs.get('kernel_size', 3)
+        self.stride = kwargs.get('stride', 1)
+        self.padding = kwargs.get('padding', 0)
+        self.shape = (self.num_filters, self.kernel_size**2)
+        self.flatten = kwargs.get('flatten', False)
+        
+        super().__init__(
+            shape=self.shape,
+            use_bias=False, 
+            **kwargs
+            )
         return
 
     def forward(self, x, runtime):
+        ins, bs = x.shape
         self.x = self._preprocessing(x)
         # Apply Im2Col operation
-        x_col = self.im2col(x)
-        # Create Kernel matrix
+        self.x = self.im2col(
+            x,
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding,
+        )
         # Dot product of kernel matrix with transposed Im2Col'ed input image
-        # Each column in the resulting matrix is a feature map
-        self.wx = self.weights.dot(self.x)
-        
-        # if self.batch_normalization:
-        #     self._apply_batch_normalization(runtime)
-        #     # Apply activation function to normalized output
-        #     self.out = self.activation(self.y)
-        
-        # Apply activation function
+        # Each row in the resulting matrix is a feature map: there is one feature map
+        # per filter, and one column per window. Each element in wx is the scalar resulting 
+        # from the dot product of one kernel with one window. 
+        # Reshaping one row gives the feature map for one filter
+        self.wx = np.moveaxis(np.array([self.weights.dot(self.x[:,:,b]) for b in range(bs)]), 0, -1)
+        if self.flatten:
+            self.wx = self.wx.reshape(-1, bs)
         self.out = self.activation(self.wx)
-        # Apply dropout
-        if self.add_dropout:
-            self.out = self._apply_dropout(runtime)
-
-        # Reshape back to 3 dimensions
-
         return self.out
-
-    def backward(self):
+    
+    def backward(self, backward_gradient):
+        self._set_backward_gradient(backward_gradient)
+        self._set_error()
+        self._set_gradient()
+        self._set_bias_gradient()
+        _,_, bs = self.error.shape
+        return np.moveaxis(np.array([self.weights.T.dot(self.error[:,:,b]) for b in range(bs)]), 0, -1)
+    
+    def _set_gradient(self):
+        _, num_windows, bs = self.x.shape
+        # self.error is dL/d_feature_map
+        if self.flatten:
+                self.error = self.error.reshape((self.num_filters, num_windows, bs))
+        self.gradient =  np.array([self.error[:,:,b].dot(self.x[:,:,b].T) for b in range(bs)]).mean(axis=0)
         return
 
     @staticmethod
@@ -292,7 +304,7 @@ class Convolutional(Layer):
 
         x_r = x.reshape(side, side, bs)
         kwargs = dict(kernel_size=kernel_size, padding=padding, stride=stride)
-        im2c = np.array([_get_col(x_r[:,:,b], **kwargs) for b in range(bs)])
+        im2c = np.moveaxis(np.array([_get_col(x_r[:,:,b], **kwargs) for b in range(bs)]), 0,-1)
         return im2c
 
     @staticmethod
