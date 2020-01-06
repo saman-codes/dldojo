@@ -287,22 +287,18 @@ def run_ff_with_batchnorm():
     predict_random_mnist(x_test, y_test, net)
 
 def run_cnn():
-    x_train, y_train, x_test, y_test = load_mnist(train_set_size=1000, test_set_size=1000)
-    fs, ins, os, hs, bs = (12, 784, 10, 100, 1000)
+    ins, os, hs, bs = (784, 10, 100, 1000)
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=bs, test_set_size=bs)
     loss = CategoricalCrossEntropy()
     net = Network()
     net.set_name('CNN')
-    conv_kwargs = dict(
-        image_side=28,
-        num_filters=fs, 
-        kernel_size=3,
-        stride=1,
-        padding=0,  
-        activation='relu')
-    net.add(Convolutional(flatten=True, **conv_kwargs))
-    # net.add(Convolutional(flatten=True, **conv_kwargs))
+    fs = 6
+    net.add(Convolutional(flatten=False, activation='relu', 
+                    input_channels=1, num_filters=fs, kernel_size=5))
+    net.add(Convolutional(flatten=True, activation='relu', 
+                    input_channels=fs, num_filters=fs*2, kernel_size=3))
     # net.add(MaxPooling())
-    net.add(Feedforward(shape=(hs, 8112), activation='relu'))
+    net.add(Feedforward(shape=(hs, 5808), activation='relu'))
     net.add(Feedforward(shape=(hs, hs), activation='relu'))
     net.add(Output(shape=(os, hs), activation='softmax'))
     net.train(x_train,  y_train, loss,

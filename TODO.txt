@@ -11,12 +11,15 @@ TO CHECK:
 
 
 TO ADD:
-    Replace Output layer with no weights, just output activation?
     Convolutional layer
     Pooling layers 
-    
-    Add batchnorm gamma and beta gradient checking
     Remove Save and load weights
+    Add link from layer to next and previous layer, so that we can calculate 
+    automatically the size of the matrix needed to match with previous layer, 
+    esp important for conv layer
+    
+    Replace Output layer with no weights, just output activation?
+    Add batchnorm gamma and beta gradient checking
     Deconvolutional layer
     Recurrent layer
     LSTM layer

@@ -184,8 +184,8 @@ class Layer():
         else:
             # else use dot product of each col (one batch element) with the matrices 
             # on the diagonal of the full jacobian (off-diagonal entries are zero matrices)
-            # Used for categorical cross entropy backprop
-            _, bs = self.backward_gradient.shape
+            # Used for categorical cross entropy and non-flattened conv layer backprop
+            bs = self.backward_gradient.shape[-1]
             self.error = np.array(
                 [self.backward_gradient[:,i].dot(dwx[:,:,i]) for i in range(bs)],
             ).T
@@ -229,12 +229,12 @@ class Output(Layer):
 
 class Convolutional(Layer):
     def __init__(self, **kwargs):
-        self.image_side = kwargs.get('image_side', 28)
         self.num_filters = kwargs.get('num_filters', 12)
         self.kernel_size = kwargs.get('kernel_size', 3)
+        self.input_channels = kwargs.get('input_channels', 1)
         self.stride = kwargs.get('stride', 1)
         self.padding = kwargs.get('padding', 0)
-        self.shape = (self.num_filters, self.kernel_size**2)
+        self.shape = (self.num_filters, self.input_channels*self.kernel_size**2)
         self.flatten = kwargs.get('flatten', False)
         
         super().__init__(
@@ -245,15 +245,19 @@ class Convolutional(Layer):
         return
 
     def forward(self, x, runtime):
-        ins, bs = x.shape
+        if len(x.shape) == 2:
+            # Add a new dimension for single-channel inputs
+            x = np.expand_dims(x, 0)
+        bs = x.shape[-1]
         self.x = self._preprocessing(x)
         # Apply Im2Col operation
         self.x = self.im2col(
-            x,
+            self.x,
             kernel_size=self.kernel_size,
             stride=self.stride,
             padding=self.padding,
         )
+        self.weights = self.kernel2row(self.weights)
         # Dot product of kernel matrix with transposed Im2Col'ed input image
         # Each row in the resulting matrix is a feature map: there is one feature map
         # per filter, and one column per window. Each element in wx is the scalar resulting 
@@ -270,7 +274,7 @@ class Convolutional(Layer):
         self._set_error()
         self._set_gradient()
         self._set_bias_gradient()
-        _,_, bs = self.error.shape
+        bs = self.error.shape[-1]
         return np.moveaxis(np.array([self.weights.T.dot(self.error[:,:,b]) for b in range(bs)]), 0, -1)
     
     def _set_gradient(self):
@@ -282,31 +286,41 @@ class Convolutional(Layer):
         return
 
     @staticmethod
-    def im2col(x, kernel_size=5, stride=1, padding=0):
-        side_squared, bs = x.shape
+    def im2col(x, kernel_size=3, stride=1, padding=0):
+        '''
+        Reshape a multichannel input image or feature map into a single-channel matrix, 
+        where each column is a window obtained by sliding a filter over the image, and there is
+        one row entry per element in the kernel
+        '''
+        num_channels, side_squared, bs = x.shape
         side = int(np.sqrt(side_squared))
         def _get_col(img, **kwargs):
             ks = kwargs.get('kernel_size')
             p = kwargs.get('padding')
             s = kwargs.get('stride')
-            h, w = img.shape
+            c, h, w = img.shape
             num_windows = int((side+2*p-ks/(s)+1)**2)
-            im2c = np.zeros(shape=(ks**2, num_windows))
+            im2c = np.zeros(shape=(c*ks**2, num_windows))
             i,col_idx =(0,0)
             while i+ks <= w:
                 j=0
                 while j+ks <= h:
-                    im2c[:, col_idx] = img[i:i+ks, j:j+ks].reshape(-1,)
+                    for k in range(c):
+                        im2c[k*ks**2:(k+1)*ks**2, col_idx] = img[k, i:i+ks, j:j+ks].reshape(-1,)
                     col_idx += 1
                     j += s
                 i += s
             return im2c
 
-        x_r = x.reshape(side, side, bs)
+        x_r = x.reshape(num_channels, side, side, bs)
         kwargs = dict(kernel_size=kernel_size, padding=padding, stride=stride)
-        im2c = np.moveaxis(np.array([_get_col(x_r[:,:,b], **kwargs) for b in range(bs)]), 0,-1)
+        im2c = np.moveaxis(np.array([_get_col(x_r[:,:,:,b], **kwargs) for b in range(bs)]), 0,-1)
         return im2c
 
     @staticmethod
-    def kernel2row(x):
-        return
+    def kernel2row(kernel):
+        '''
+        Reshape a 3-d volume kernel into a 2-d volume matrix
+        Each volume filter becomes a row in this matrix
+        '''
+        return kernel.reshape(-1, kernel.shape[-1])
