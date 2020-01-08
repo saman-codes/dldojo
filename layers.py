@@ -85,11 +85,16 @@ class Layer():
         return self.out
 
     def backward(self, backward_gradient):
+        # Backward gradient (dLdout)-> the gradient backpropagated from the next layer
         self._set_backward_gradient(backward_gradient)
+        # Error -> backward gradient * f'(wx)
         self._set_error()
+        # Gradient (dLdw) -> error.dot(W)
         self._set_gradient()
         self._set_bias_gradient()
-        return self.weights.T.dot(self.error)
+        # Backprop the gradient of the layer input to previous layer
+        dLdx = self.weights.T.dot(self.error)
+        return dLdx
 
     def _apply_dropout(self, runtime):
         if runtime == 'train':
@@ -250,13 +255,17 @@ class Convolutional(Layer):
             x = np.expand_dims(x, 0)
         bs = x.shape[-1]
         self.x = self._preprocessing(x)
+        conv_params = dict(kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
+        
+        import copy
+        X_COPY = copy.deepcopy(self.x)
+        self.x_CHECK = self.OLD_WORKING_im2col(X_COPY, **conv_params)
+        
         # Apply Im2Col operation
-        self.x = self.im2col(
-            self.x,
-            kernel_size=self.kernel_size,
-            stride=self.stride,
-            padding=self.padding,
-        )
+        self.x = self.im2col(self.x, **conv_params)
+
+        assert (self.x != self.x_CHECK).sum() == 0
+
         self.weights = self.kernel2row(self.weights)
         # Dot product of kernel matrix with transposed Im2Col'ed input image
         # Each row in the resulting matrix is a feature map: there is one feature map
@@ -266,6 +275,9 @@ class Convolutional(Layer):
         self.wx = np.moveaxis(np.array([self.weights.dot(self.x[:,:,b]) for b in range(bs)]), 0, -1)
         if self.flatten:
             self.wx = self.wx.reshape(-1, bs)
+        else:
+            # if not flattening the output, reshape it as a multichannel feature map
+            self.wx = self.col2im(self.wx, **conv_params)
         self.out = self.activation(self.wx)
         return self.out
     
@@ -285,6 +297,39 @@ class Convolutional(Layer):
         self.gradient =  np.array([self.error[:,:,b].dot(self.x[:,:,b].T) for b in range(bs)]).mean(axis=0)
         return
 
+    def _set_error(self):
+        dwx = self.activation.derivative(self.wx)
+        # if self.add_dropout:
+        #     dwx *= self.dropout_mask
+        self.error = self.backward_gradient * dwx
+        return
+    
+    @staticmethod
+    def OLD_WORKING_im2col(x, kernel_size=5, stride=1, padding=0):
+        c, side_squared, bs = x.shape
+        side = int(np.sqrt(side_squared))
+        def _get_col(img, **kwargs):
+            ks = kwargs.get('kernel_size')
+            p = kwargs.get('padding')
+            s = kwargs.get('stride')
+            h, w = img.shape
+            num_windows = int((side+2*p-ks/(s)+1)**2)
+            im2c = np.zeros(shape=(ks**2, num_windows))
+            i,col_idx =(0,0)
+            while i+ks <= w:
+                j=0
+                while j+ks <= h:
+                    im2c[:, col_idx] = img[i:i+ks, j:j+ks].reshape(-1,)
+                    col_idx += 1
+                    j += s
+                i += s
+            return im2c
+
+        x_r = x.reshape(side, side, bs)
+        kwargs = dict(kernel_size=kernel_size, padding=padding, stride=stride)
+        im2c = np.moveaxis(np.array([_get_col(x_r[:,:,b], **kwargs) for b in range(bs)]), 0,-1)
+        return im2c
+
     @staticmethod
     def im2col(x, kernel_size=3, stride=1, padding=0):
         '''
@@ -292,30 +337,46 @@ class Convolutional(Layer):
         where each column is a window obtained by sliding a filter over the image, and there is
         one row entry per element in the kernel
         '''
-        num_channels, side_squared, bs = x.shape
-        side = int(np.sqrt(side_squared))
-        def _get_col(img, **kwargs):
-            ks = kwargs.get('kernel_size')
-            p = kwargs.get('padding')
-            s = kwargs.get('stride')
-            c, h, w = img.shape
-            num_windows = int((side+2*p-ks/(s)+1)**2)
-            im2c = np.zeros(shape=(c*ks**2, num_windows))
-            i,col_idx =(0,0)
-            while i+ks <= w:
+        if len(x.shape) == 3: 
+            num_channels, side_squared, bs = x.shape
+            side = int(np.sqrt(side_squared))
+            x = x.reshape(num_channels, side, side, bs)
+        
+        c, h, w, bs = x.shape
+        num_windows = int((h+2*padding-kernel_size/(stride)+1)**2)
+        im2c = np.zeros(shape=(c*kernel_size**2, num_windows, bs))
+        i,col_idx =(0,0)
+        for b, batch_el in enumerate(x.T):
+            while i+kernel_size <= w:
                 j=0
-                while j+ks <= h:
+                while j+kernel_size <= h:
                     for k in range(c):
-                        im2c[k*ks**2:(k+1)*ks**2, col_idx] = img[k, i:i+ks, j:j+ks].reshape(-1,)
+                        im2c[k*kernel_size**2:(k+1)*kernel_size**2, col_idx, b] = batch_el.T[k, i:i+kernel_size, j:j+kernel_size].reshape(-1,)
                     col_idx += 1
-                    j += s
-                i += s
-            return im2c
-
-        x_r = x.reshape(num_channels, side, side, bs)
-        kwargs = dict(kernel_size=kernel_size, padding=padding, stride=stride)
-        im2c = np.moveaxis(np.array([_get_col(x_r[:,:,:,b], **kwargs) for b in range(bs)]), 0,-1)
+                    j += stride
+                i += stride
         return im2c
+    
+    @staticmethod
+    def col2im(x, backwards=False, kernel_size=3, stride=1, padding=0):
+        '''
+        Reverse operation of im2col: turn a single-channel matrix into a multichannel feature map,
+        where each channel is a 2-d filter of size (kernel_size, kernel_size)
+        Output is then of size (num_filters, feature_map_side, feature_map_side, batch_size)
+        '''
+        
+        input_side = 28
+
+        num_filters, num_windows, bs = x.shape
+        feature_map_side = int((input_side-kernel_size+2*padding)/stride+1)
+        c2im = np.zeros(shape=(num_filters, feature_map_side, feature_map_side, bs))
+        for b, batch_el in enumerate(x.T):
+            for f, row in enumerate(batch_el.T):
+                    c2im[f,:,:,b] = row.reshape(feature_map_side, feature_map_side)
+        if backwards:
+            # When c2im is applied in the backward pass, we need to sum the gradients for repeated elements
+            pass
+        return c2im
 
     @staticmethod
     def kernel2row(kernel):

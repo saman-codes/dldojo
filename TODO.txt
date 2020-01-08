@@ -11,7 +11,12 @@ TO CHECK:
 
 
 TO ADD:
-    Convolutional layer
+    Convolutional layer:
+    - Add col2im
+    - Add padding in im2col and col2im.
+    - Is stride working correctly?
+    - Fix visualize weights for convolutional layer
+    - Replace im2col with array reindexing (instead of 3 nested for loops!)
     Pooling layers 
     Remove Save and load weights
     Add link from layer to next and previous layer, so that we can calculate 

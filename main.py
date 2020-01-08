@@ -288,18 +288,17 @@ def run_ff_with_batchnorm():
 
 def run_cnn():
     ins, os, hs, bs = (784, 10, 100, 1000)
-    x_train, y_train, x_test, y_test = load_mnist(train_set_size=bs, test_set_size=bs)
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=bs, test_set_size=1000)
     loss = CategoricalCrossEntropy()
     net = Network()
     net.set_name('CNN')
-    fs = 6
-    net.add(Convolutional(flatten=False, activation='relu', 
-                    input_channels=1, num_filters=fs, kernel_size=5))
+    fs = 64
+    # net.add(Convolutional(flatten=False, activation='relu', 
+    #                 input_channels=1, num_filters=fs, kernel_size=5))
     net.add(Convolutional(flatten=True, activation='relu', 
-                    input_channels=fs, num_filters=fs*2, kernel_size=3))
+                    input_channels=1, num_filters=fs, kernel_size=3))
     # net.add(MaxPooling())
-    net.add(Feedforward(shape=(hs, 5808), activation='relu'))
-    net.add(Feedforward(shape=(hs, hs), activation='relu'))
+    net.add(Feedforward(shape=(hs, 43264), activation='relu'))
     net.add(Output(shape=(os, hs), activation='softmax'))
     net.train(x_train,  y_train, loss,
             optimizer='adam',
