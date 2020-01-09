@@ -254,18 +254,9 @@ class Convolutional(Layer):
             # Add a new dimension for single-channel inputs
             x = np.expand_dims(x, 0)
         bs = x.shape[-1]
-        self.x = self._preprocessing(x)
+        x = self._preprocessing(x)
         conv_params = dict(kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
-        
-        import copy
-        X_COPY = copy.deepcopy(self.x)
-        self.x_CHECK = self.OLD_WORKING_im2col(X_COPY, **conv_params)
-        
-        # Apply Im2Col operation
-        self.x = self.im2col(self.x, **conv_params)
-
-        assert (self.x != self.x_CHECK).sum() == 0
-
+        self.x = self.im2col(x, **conv_params)
         self.weights = self.kernel2row(self.weights)
         # Dot product of kernel matrix with transposed Im2Col'ed input image
         # Each row in the resulting matrix is a feature map: there is one feature map
@@ -305,32 +296,6 @@ class Convolutional(Layer):
         return
     
     @staticmethod
-    def OLD_WORKING_im2col(x, kernel_size=5, stride=1, padding=0):
-        c, side_squared, bs = x.shape
-        side = int(np.sqrt(side_squared))
-        def _get_col(img, **kwargs):
-            ks = kwargs.get('kernel_size')
-            p = kwargs.get('padding')
-            s = kwargs.get('stride')
-            h, w = img.shape
-            num_windows = int((side+2*p-ks/(s)+1)**2)
-            im2c = np.zeros(shape=(ks**2, num_windows))
-            i,col_idx =(0,0)
-            while i+ks <= w:
-                j=0
-                while j+ks <= h:
-                    im2c[:, col_idx] = img[i:i+ks, j:j+ks].reshape(-1,)
-                    col_idx += 1
-                    j += s
-                i += s
-            return im2c
-
-        x_r = x.reshape(side, side, bs)
-        kwargs = dict(kernel_size=kernel_size, padding=padding, stride=stride)
-        im2c = np.moveaxis(np.array([_get_col(x_r[:,:,b], **kwargs) for b in range(bs)]), 0,-1)
-        return im2c
-
-    @staticmethod
     def im2col(x, kernel_size=3, stride=1, padding=0):
         '''
         Reshape a multichannel input image or feature map into a single-channel matrix, 
@@ -345,13 +310,13 @@ class Convolutional(Layer):
         c, h, w, bs = x.shape
         num_windows = int((h+2*padding-kernel_size/(stride)+1)**2)
         im2c = np.zeros(shape=(c*kernel_size**2, num_windows, bs))
-        i,col_idx =(0,0)
         for b, batch_el in enumerate(x.T):
+            i,col_idx =(0,0)
             while i+kernel_size <= w:
                 j=0
                 while j+kernel_size <= h:
                     for k in range(c):
-                        im2c[k*kernel_size**2:(k+1)*kernel_size**2, col_idx, b] = batch_el.T[k, i:i+kernel_size, j:j+kernel_size].reshape(-1,)
+                        im2c[k*kernel_size**2:(k+1)*kernel_size**2, col_idx, b] = batch_el[i:i+kernel_size, j:j+kernel_size, k].reshape(-1,)
                     col_idx += 1
                     j += stride
                 i += stride

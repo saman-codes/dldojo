@@ -19,6 +19,7 @@ TO ADD:
     - Replace im2col with array reindexing (instead of 3 nested for loops!)
     Pooling layers 
     Remove Save and load weights
+    
     Add link from layer to next and previous layer, so that we can calculate 
     automatically the size of the matrix needed to match with previous layer, 
     esp important for conv layer
