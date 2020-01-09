@@ -15,6 +15,7 @@ TO ADD:
     - Add col2im
     - Add padding in im2col and col2im.
     - Is stride working correctly?
+    - Check bias gradient
     - Fix visualize weights for convolutional layer
     - Replace im2col with array reindexing (instead of 3 nested for loops!)
     Pooling layers 

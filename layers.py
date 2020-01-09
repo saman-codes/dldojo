@@ -284,7 +284,7 @@ class Convolutional(Layer):
         _, num_windows, bs = self.x.shape
         # self.error is dL/d_feature_map
         if self.flatten:
-                self.error = self.error.reshape((self.num_filters, num_windows, bs))
+            self.error = self.error.reshape((self.num_filters, num_windows, bs))
         self.gradient =  np.array([self.error[:,:,b].dot(self.x[:,:,b].T) for b in range(bs)]).mean(axis=0)
         return
 
@@ -292,6 +292,9 @@ class Convolutional(Layer):
         dwx = self.activation.derivative(self.wx)
         # if self.add_dropout:
         #     dwx *= self.dropout_mask
+        if len(self.backward_gradient.shape) > 2:
+            kwargs = dict(backwards=True, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
+            self.backward_gradient = self.col2im(self.backward_gradient, **kwargs)
         self.error = self.backward_gradient * dwx
         return
     
@@ -308,7 +311,7 @@ class Convolutional(Layer):
             x = x.reshape(num_channels, side, side, bs)
         
         c, h, w, bs = x.shape
-        num_windows = int((h+2*padding-kernel_size/(stride)+1)**2)
+        num_windows = int((h-kernel_size+2*padding/stride+1)**2)
         im2c = np.zeros(shape=(c*kernel_size**2, num_windows, bs))
         for b, batch_el in enumerate(x.T):
             i,col_idx =(0,0)
@@ -325,22 +328,45 @@ class Convolutional(Layer):
     @staticmethod
     def col2im(x, backwards=False, kernel_size=3, stride=1, padding=0):
         '''
-        Reverse operation of im2col: turn a single-channel matrix into a multichannel feature map,
-        where each channel is a 2-d filter of size (kernel_size, kernel_size)
-        Output is then of size (num_filters, feature_map_side, feature_map_side, batch_size)
+        Reverse operation of im2col: turn a multichannel feature map into a corresponding image:
+        each column (the result of applying the convolution kernel over a single window in the input) 
+        is reshaped into the shape of the input image the filters have been convolved on
+        Output is then of size (num_filters, input_side, input_side, batch_size)
         '''
-        
-        input_side = 28
+        # TODO: FIX THIS BIT!  ORIGINAL INPUT SIZE IS BEING PASSED MANUALLY ATM
+        h, w = (28,28)
+        num_filters = 6
 
-        num_filters, num_windows, bs = x.shape
-        feature_map_side = int((input_side-kernel_size+2*padding)/stride+1)
-        c2im = np.zeros(shape=(num_filters, feature_map_side, feature_map_side, bs))
+        if len(x.shape) == 2:
+            x = x[np.newaxis, :,:]
+        
+        feature_maps_channels, num_windows, bs = x.shape
+        nw = np.sqrt(num_windows)
+        kernel_size = int(h + 2*padding + (1-nw)*stride)
+        
+        c2im = np.zeros(shape=(num_filters, h, w, bs))
+        # for b, batch_el in enumerate(x.T):
+        #     for f, row in enumerate(batch_el.T):
+        #             c2im[f,:,:,b] = row.reshape(feature_map_side, feature_map_side)
         for b, batch_el in enumerate(x.T):
-            for f, row in enumerate(batch_el.T):
-                    c2im[f,:,:,b] = row.reshape(feature_map_side, feature_map_side)
-        if backwards:
-            # When c2im is applied in the backward pass, we need to sum the gradients for repeated elements
-            pass
+            print(b)
+            i, col_idx =(0,0)
+            while i+kernel_size <= w:
+                j=0
+                while j+kernel_size <= h:
+                    for k in range(feature_maps_channels):
+                        if backwards:
+                            # When c2im is applied in the backward pass, we need to sum the gradients for repeated elements
+                            c2im[:, i:i+kernel_size, j:j+kernel_size, b] += batch_el[k*kernel_size**2:(k+1)*kernel_size**2, col_idx].reshape(kernel_size, kernel_size)
+                        else:
+                            # otherwise just assign the elements
+                            try:
+                                c2im[:, i:i+kernel_size, j:j+kernel_size, b] = batch_el[k*kernel_size**2:(k+1)*kernel_size**2, col_idx].reshape(kernel_size, kernel_size)
+                            except:
+                                pass
+                    j += stride
+                col_idx += 1
+                i += stride
         return c2im
 
     @staticmethod
