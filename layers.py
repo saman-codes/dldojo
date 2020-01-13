@@ -10,6 +10,7 @@ from initializers import Initializer
 
 # Thirdparty
 import numpy as np
+from numpy.lib.stride_tricks import as_strided
 
 
 class Layer():
@@ -197,6 +198,7 @@ class Layer():
         return
 
     def _set_gradient(self):
+        # Gradient is summed over batch dimension, then divided by batch_size in the optimizer
         self.gradient = self.error.dot(self.x.T)
         return
 
@@ -239,8 +241,8 @@ class Convolutional(Layer):
         self.input_channels = kwargs.get('input_channels', 1)
         self.stride = kwargs.get('stride', 1)
         self.padding = kwargs.get('padding', 0)
-        self.shape = (self.num_filters, self.input_channels*self.kernel_size**2)
         self.flatten = kwargs.get('flatten', False)
+        self.shape = (self.num_filters, self.input_channels*self.kernel_size**2)
         
         super().__init__(
             shape=self.shape,
@@ -253,7 +255,6 @@ class Convolutional(Layer):
         if len(x.shape) == 2:
             # Add a new dimension for single-channel inputs
             x = np.expand_dims(x, 0)
-        bs = x.shape[-1]
         x = self._preprocessing(x)
         conv_params = dict(kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
         self.x = self.im2col(x, **conv_params)
@@ -263,7 +264,11 @@ class Convolutional(Layer):
         # per filter, and one column per window. Each element in wx is the scalar resulting 
         # from the dot product of one kernel with one window. 
         # Reshaping one row gives the feature map for one filter
-        self.wx = np.moveaxis(np.array([self.weights.dot(self.x[:,:,b]) for b in range(bs)]), 0, -1)
+        _, num_windows, bs = self.x.shape
+        num_filters, _ = self.weights.shape
+        self.wx = np.zeros(shape=(num_filters, num_windows, bs))
+        for b, batch_el in enumerate(self.x.T):
+            self.wx[:,:,b] = self.weights.dot(batch_el.T)
         if self.flatten:
             self.wx = self.wx.reshape(-1, bs)
         else:
@@ -285,16 +290,22 @@ class Convolutional(Layer):
         # self.error is dL/d_feature_map
         if self.flatten:
             self.error = self.error.reshape((self.num_filters, num_windows, bs))
-        self.gradient =  np.array([self.error[:,:,b].dot(self.x[:,:,b].T) for b in range(bs)]).mean(axis=0)
+        # Gradient of loss wrt the conv layer weights (filters) is a convolution of 
+        # the error (dLdwx * f'(wx)) on the input x, recast as dot product with im2col
+        gradient_shape = (self.num_filters, self.kernel_size**2, bs)
+        self.gradient = np.zeros(shape=gradient_shape)
+        for b, batch_el in enumerate(self.x.T):
+            self.gradient[:,:,b] = self.error[:,:,b].dot(batch_el)
+        self.gradient = self.gradient.mean(axis=2)
         return
 
     def _set_error(self):
         dwx = self.activation.derivative(self.wx)
         # if self.add_dropout:
         #     dwx *= self.dropout_mask
-        if len(self.backward_gradient.shape) > 2:
-            kwargs = dict(backwards=True, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
-            self.backward_gradient = self.col2im(self.backward_gradient, **kwargs)
+        # if len(self.backward_gradient.shape) > 2:
+        #     kwargs = dict(backwards=True, kernel_size=self.kernel_size, stride=self.stride, padding=self.padding)
+        #     self.backward_gradient = self.col2im(self.backward_gradient, **kwargs)
         self.error = self.backward_gradient * dwx
         return
     
@@ -305,7 +316,7 @@ class Convolutional(Layer):
         where each column is a window obtained by sliding a filter over the image, and there is
         one row entry per element in the kernel
         '''
-        if len(x.shape) == 3: 
+        if len(x.shape) < 4: 
             num_channels, side_squared, bs = x.shape
             side = int(np.sqrt(side_squared))
             x = x.reshape(num_channels, side, side, bs)
@@ -313,43 +324,42 @@ class Convolutional(Layer):
         c, h, w, bs = x.shape
         num_windows = int((h-kernel_size+2*padding/stride+1)**2)
         im2c = np.zeros(shape=(c*kernel_size**2, num_windows, bs))
+        # for b, batch_el in enumerate(x.T):
+        #     i,col_idx =(0,0)
+        #     while i+kernel_size <= w:
+        #         j=0
+        #         while j+kernel_size <= h:
+        #             for k in range(c):
+        #                 im2c[k*kernel_size**2:(k+1)*kernel_size**2, col_idx, b] = batch_el[i:i+kernel_size, j:j+kernel_size, k].reshape(-1,)
+        #             col_idx += 1
+        #             j += stride
+        #         i += stride        
+        shape = (kernel_size, kernel_size) + tuple(np.subtract((side,side), (kernel_size, kernel_size)) + 1)
         for b, batch_el in enumerate(x.T):
-            i,col_idx =(0,0)
-            while i+kernel_size <= w:
-                j=0
-                while j+kernel_size <= h:
-                    for k in range(c):
-                        im2c[k*kernel_size**2:(k+1)*kernel_size**2, col_idx, b] = batch_el[i:i+kernel_size, j:j+kernel_size, k].reshape(-1,)
-                    col_idx += 1
-                    j += stride
-                i += stride
+            for c, channel in enumerate(batch_el.T):
+                im2c[c*kernel_size**2:(c+1)*kernel_size**2,:,b] = as_strided(channel, shape=shape, strides=channel.strides*2).reshape(kernel_size**2, -1)
         return im2c
     
-    @staticmethod
-    def col2im(x, backwards=False, kernel_size=3, stride=1, padding=0):
+    
+    def col2im(self, x, backwards=False, kernel_size=3, stride=1, padding=0):
         '''
         Reverse operation of im2col: turn a multichannel feature map into a corresponding image:
         each column (the result of applying the convolution kernel over a single window in the input) 
         is reshaped into the shape of the input image the filters have been convolved on
         Output is then of size (num_filters, input_side, input_side, batch_size)
         '''
-        # TODO: FIX THIS BIT!  ORIGINAL INPUT SIZE IS BEING PASSED MANUALLY ATM
         h, w = (28,28)
         num_filters = 6
 
         if len(x.shape) == 2:
             x = x[np.newaxis, :,:]
-        
         feature_maps_channels, num_windows, bs = x.shape
         nw = np.sqrt(num_windows)
-        kernel_size = int(h + 2*padding + (1-nw)*stride)
-        
+        # kernel_size = int(h + 2*padding + (1-nw)*stride)
+        h = int(self.kernel_size - 2*padding - (1-nw)*stride)
+        w = h
         c2im = np.zeros(shape=(num_filters, h, w, bs))
-        # for b, batch_el in enumerate(x.T):
-        #     for f, row in enumerate(batch_el.T):
-        #             c2im[f,:,:,b] = row.reshape(feature_map_side, feature_map_side)
         for b, batch_el in enumerate(x.T):
-            print(b)
             i, col_idx =(0,0)
             while i+kernel_size <= w:
                 j=0
