@@ -321,63 +321,65 @@ class Convolutional(Layer):
             side = int(np.sqrt(side_squared))
             x = x.reshape(num_channels, side, side, bs)
         
-        c, h, w, bs = x.shape
-        num_windows = int((h-kernel_size+2*padding/stride+1)**2)
-        im2c = np.zeros(shape=(c*kernel_size**2, num_windows, bs))
-        # for b, batch_el in enumerate(x.T):
-        #     i,col_idx =(0,0)
-        #     while i+kernel_size <= w:
-        #         j=0
-        #         while j+kernel_size <= h:
-        #             for k in range(c):
-        #                 im2c[k*kernel_size**2:(k+1)*kernel_size**2, col_idx, b] = batch_el[i:i+kernel_size, j:j+kernel_size, k].reshape(-1,)
-        #             col_idx += 1
-        #             j += stride
-        #         i += stride        
-        shape = (kernel_size, kernel_size) + tuple(np.subtract((side,side), (kernel_size, kernel_size)) + 1)
+        c, side, _, bs = x.shape
+        num_windows = int((side-kernel_size+2*padding)/stride)+1
+        tot_num_windows = int(num_windows**2)
+        # Each window has size (ks,ks) and there num_windows patches in each direction
+        # (e.g. a 3x3 filter on a 4x4 image defines 3 windows horizontally and 3 windows vertically, 
+        # for a total of 9 windows. So the output array has shape (ks, ks, num_windows, num_windows)
+        shape = (kernel_size, kernel_size, num_windows, num_windows) 
+        im2c = np.zeros(shape=(c*kernel_size**2, tot_num_windows, bs)) 
         for b, batch_el in enumerate(x.T):
             for c, channel in enumerate(batch_el.T):
                 im2c[c*kernel_size**2:(c+1)*kernel_size**2,:,b] = as_strided(channel, shape=shape, strides=channel.strides*2).reshape(kernel_size**2, -1)
         return im2c
     
     
-    def col2im(self, x, backwards=False, kernel_size=3, stride=1, padding=0):
-        '''
-        Reverse operation of im2col: turn a multichannel feature map into a corresponding image:
-        each column (the result of applying the convolution kernel over a single window in the input) 
-        is reshaped into the shape of the input image the filters have been convolved on
-        Output is then of size (num_filters, input_side, input_side, batch_size)
-        '''
-        h, w = (28,28)
-        num_filters = 6
+    # def col2im(self, x, backwards=False, kernel_size=3, stride=1, padding=0):
+    #     '''
+    #     Reverse operation of im2col: turn a multichannel feature map into a corresponding image:
+    #     each column (the result of applying the convolution kernel over a single wind\ow in the input) 
+    #     is reshaped into the shape of the input image the filters have been convolved on
+    #     Output is then of size (num_filters, input_side, input_side, batch_size)
+    #     '''
+    #     h, w = (28,28)
+    #     num_filters = 6
 
-        if len(x.shape) == 2:
-            x = x[np.newaxis, :,:]
-        feature_maps_channels, num_windows, bs = x.shape
-        nw = np.sqrt(num_windows)
-        # kernel_size = int(h + 2*padding + (1-nw)*stride)
-        h = int(self.kernel_size - 2*padding - (1-nw)*stride)
-        w = h
-        c2im = np.zeros(shape=(num_filters, h, w, bs))
-        for b, batch_el in enumerate(x.T):
-            i, col_idx =(0,0)
-            while i+kernel_size <= w:
-                j=0
-                while j+kernel_size <= h:
-                    for k in range(feature_maps_channels):
-                        if backwards:
-                            # When c2im is applied in the backward pass, we need to sum the gradients for repeated elements
-                            c2im[:, i:i+kernel_size, j:j+kernel_size, b] += batch_el[k*kernel_size**2:(k+1)*kernel_size**2, col_idx].reshape(kernel_size, kernel_size)
-                        else:
-                            # otherwise just assign the elements
-                            try:
-                                c2im[:, i:i+kernel_size, j:j+kernel_size, b] = batch_el[k*kernel_size**2:(k+1)*kernel_size**2, col_idx].reshape(kernel_size, kernel_size)
-                            except:
-                                pass
-                    j += stride
-                col_idx += 1
-                i += stride
-        return c2im
+    #     if len(x.shape) == 2:
+    #         x = x[np.newaxis, :,:]
+    #     feature_maps_channels, num_windows, bs = x.shape
+    #     nw = np.sqrt(num_windows)
+    #     # kernel_size = int(h + 2*padding + (1-nw)*stride)
+    #     h = int(self.kernel_size - 2*padding - (1-nw)*stride)
+    #     w = h
+    #     c2im = np.zeros(shape=(num_filters, h, w, bs))
+    #     # for b, batch_el in enumerate(x.T):
+    #     #     i, col_idx =(0,0)
+    #     #     while i+kernel_size <= w:
+    #     #         j=0
+    #     #         while j+kernel_size <= h:
+    #     #             for k in range(feature_maps_channels):
+    #     #                 if backwards:
+    #     #                     # When c2im is applied in the backward pass, we need to sum the gradients for repeated elements
+    #     #                     c2im[:, i:i+kernel_size, j:j+kernel_size, b] += batch_el[k*kernel_size**2:(k+1)*kernel_size**2, col_idx].reshape(kernel_size, kernel_size)
+    #     #                 else:
+    #     #                     # otherwise just assign the elements
+    #     #                     try:
+    #     #                         c2im[:, i:i+kernel_size, j:j+kernel_size, b] = batch_el[k*kernel_size**2:(k+1)*kernel_size**2, col_idx].reshape(kernel_size, kernel_size)
+    #     #                     except:
+    #     #                         pass
+    #     #             j += stride
+    #     #         col_idx += 1
+    #     #         i += stride
+    #     for b, batch_el in enumerate(x.T):
+    #         for c, channel in enumerate(batch_el.T):
+    #             if backwards:
+    #                  # When c2im is applied in the backward pass, we need to sum the gradients for repeated elements
+    #                 im2c[c*kernel_size**2:(c+1)*kernel_size**2,:,b] += as_strided(channel, shape=shape, strides=channel.strides*2).reshape(kernel_size**2, -1)
+    #             else:
+    #                 # otherwise just assign the elements
+    #                 im2c[c*kernel_size**2:(c+1)*kernel_size**2,:,b] = as_strided(channel, shape=shape, strides=channel.strides*2).reshape(kernel_size**2, -1)
+    #     return c2im
 
     @staticmethod
     def kernel2row(kernel):
