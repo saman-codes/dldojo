@@ -2,10 +2,10 @@
 
 <br>
 <p align="center">
-  <h1 align="center">DL Dojo</h1>
+  <img src="img/title.png" height="100">
 
   <p align="center">
-   My happy place to play around reimplementing the basic building blocks of deep learning with nothing fancier than Numpy.
+   My happy place to play around reimplementing the basic building blocks of deep learning in Numpy.
 </p>
 
 ## Includes: 
@@ -40,6 +40,8 @@
   
 ---
 
+*What's this?* A deep learning library written from scratch in pure Python and Numpy.
+
 *Is this the best possible way of implementing a neural network library?* Definitely not
 
 *Couldn't you think of a better way of doing this?* Yes, absolutely
@@ -50,27 +52,27 @@
 
 *Why didn't you implement a full autodiff library with computational graphs instead?* Because I started implementing stuff and kept going until I felt like it, and then I didn't feel like refactoring the whole project. But I'd love to do it at some point in the future, if I ever have the time
 
-*So, what's the point of this project?* Well, I learned a lot reimplementing all these things from scratch, and I had a lot of fun 
+*So, what's the point of this project?* Well, I learned a lot reimplementing all these things from scratch, and I had a lot of fun
 
 *Does it really work?* Yes, it does!
 
 Here's some of the things it can do...
 
-<h2 align="center"> Classifying MNIST digits </h2>
+<h2 align="center"> Classify MNIST digits </h2>
 
 <p align="center">
 <br>
 <img src='img/FF_with_Softmax_and_Categorical_Cross_Entropy.jpg' height='512'>
 <br>
 
-<h2 align="center"> Generating MNIST digits from a trained autoencoder </h2>
+<h2 align="center"> Generate MNIST digits from a trained autoencoder </h2>
 
 <p align="center">
 <br>
 <img src='img/Decoder.jpg' height='512'>
 <br>
 
-<h2 align="center"> Visualising weights of a trained net </h2>
+<h2 align="center"> Visualise weights of a trained net </h2>
 
 <p align="center">
 <br>
