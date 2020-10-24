@@ -1,9 +1,8 @@
 [![MIT License][license-shield]][license-url]
 
 <br>
-<p align="center">
-  <img src="img/title.png" height="100">
-
+  <p align="center">
+  <img src='img/title.png'>
   <p align="center">
    My happy place to play around reimplementing the basic building blocks of deep learning in Numpy.
 </p>
