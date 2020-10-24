@@ -10,33 +10,35 @@
 
 ## Includes: 
 
-[x] Gradient checking
+- [x] Gradient checking
 
-[x] Batch Normalization
+- [x] Batch Normalization
 
-[x] Dropout
+- [x] Dropout
 
-[x] L1 Regularization
+- [x] L1 Regularization
 
-[x] All main activations (ReLU, Leaky ReLU, Linear, Sigmoid, Softmax)
+- [x] All main activations (ReLU, Leaky ReLU, Linear, Sigmoid, Softmax)
 
-[x] A bunch of initializers (normal, uniform, ones, zers, Glorot Normal/Uniform, He Normal/Uniform)
+- [x] A bunch of initializers (normal, uniform, ones, zers, Glorot Normal/Uniform, He Normal/Uniform)
 
-[x] A bunch of optimizers (SGD, Momentum, Nesterov Momentum, Adagrad, RMSProp, Adam)
+- [x] A bunch of optimizers (SGD, Momentum, Nesterov Momentum, Adagrad, RMSProp, Adam)
 
-[x] MSE, Binary Cross Entropy and Categorical Cross Entropy losses
+- [x] MSE, Binary Cross Entropy and Categorical Cross Entropy losses
 
-[x] MNIST prediction
+- [x] MNIST prediction
 
-[x] Weight plotting
+- [x] Weight plotting
 
 ## TODO and WIP:
 
-[ ] Conv2D, DeConv and Pooling layers
+- [ ] Conv2D, DeConv and Pooling layers
 
-[ ] RNN, LSTM and everything recurrent
+- [ ] RNN, LSTM and everything recurrent
 
-[ ] Self-attention layer
+- [ ] Self-attention layer
+  
+---
 
 *Is this the best possible way of implementing a neural network library?* Definitely not
 
@@ -57,21 +59,21 @@ Here's some of the things it can do...
 <p align="center">
 Classifying MNIST digits
 <br>
-<img src='img/FF_with_Softmax_and_Categorical_Cross_Entropy.jpg' height='256'>
+<img src='img/FF_with_Softmax_and_Categorical_Cross_Entropy.jpg' height='512'>
 <br>
 
 <p align="center">
 Generating MNIST digits from a trained autoencoder
 <br>
-<img src='img/Decoder.jpg' height='256'>
+<img src='img/Decoder.jpg' height='512'>
 <br>
 
 <p align="center">
 Visualising weights of a trained net
 <br>
-<img src='img/FF_with_Adam_layer_0_weights.jpg' height='256'>
+<img src='img/FF_with_Adam_layer_0_weights.jpg' height='512'>
 <br>
-<img src='img/No_hidden_layer_FF_layer_0_weights.jpg' height='256'>
+<img src='img/No_hidden_layer_FF_layer_0_weights.jpg' height='512'>
 <br>
 
 *How do I run it?* 
