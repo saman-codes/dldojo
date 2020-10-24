@@ -56,20 +56,23 @@
 
 Here's some of the things it can do...
 
+<h2 align="center"> Classifying MNIST digits </h2>
+
 <p align="center">
-Classifying MNIST digits
 <br>
 <img src='img/FF_with_Softmax_and_Categorical_Cross_Entropy.jpg' height='512'>
 <br>
 
+<h2 align="center"> Generating MNIST digits from a trained autoencoder </h2>
+
 <p align="center">
-Generating MNIST digits from a trained autoencoder
 <br>
 <img src='img/Decoder.jpg' height='512'>
 <br>
 
+<h2 align="center"> Visualising weights of a trained net </h2>
+
 <p align="center">
-Visualising weights of a trained net
 <br>
 <img src='img/FF_with_Adam_layer_0_weights.jpg' height='512'>
 <br>
@@ -82,8 +85,6 @@ Install the dependencies with:
 ```sh
 pip install -r requirements.txt
 ```
-
-There's only 3 of them: matplotlib, tqdm and numpy.
 
 There's a bunch of test functions in main.py - just comment out the ones you don't want to run, then run main.py
 
