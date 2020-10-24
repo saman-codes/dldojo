@@ -1,6 +1,7 @@
 import os
 
-IMG_DIR = os.path.join('img')
+CWD = os.path.dirname(os.path.abspath(__file__))
+IMG_DIR = os.path.join(CWD, '..', 'img')
 if not os.path.exists(IMG_DIR):
     os.makedirs(IMG_DIR)
 

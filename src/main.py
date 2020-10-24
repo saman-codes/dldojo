@@ -1,7 +1,7 @@
 # Local
 from network import Network
 from losses import MSE, BinaryCrossEntropy, CategoricalCrossEntropy
-from layers import Feedforward, Output, Convolutional
+from layers import Feedforward, Output
 from utils import load_mnist, predict_random_mnist, get_accuracy_mnist, plot_weights, plot_random_mnist_autoencoder
 
 # Thirdparty
@@ -29,12 +29,10 @@ def run_autoencoder():
               learning_rate=1e-3,
               epochs=100,
               plot_loss=True)
-    plot_weights(net)
-    generator = Network()
-    generator.set_name('Generator')
-    generator.layers = net.layers[2:]
-    plot_random_mnist_autoencoder(generator)
-    plot_weights()
+    decoder = Network()
+    decoder.set_name('Decoder')
+    decoder.layers = net.layers[2:]
+    plot_random_mnist_autoencoder(decoder, save_plot=True)
 
 
 def run_feedforward_gradient_checking():
@@ -60,8 +58,7 @@ def run_feedforward_gradient_checking():
               gradient_check=True,
               batch_size=bs,
               learning_rate=1,
-              epochs=1,
-              plot_loss=False)
+              epochs=1)
 
 
 def run_feedforward():
@@ -81,10 +78,8 @@ def run_feedforward():
               loss,
               batch_size=bs,
               learning_rate=1e-3,
-              epochs=100,
-              plot_loss=False)
+              epochs=100)
     get_accuracy_mnist(x_test, y_test, net)
-    # plot_weights(net)
     predict_random_mnist(x_test, y_test, net, save_plot=True)
 
 
@@ -94,7 +89,7 @@ def run_ff_with_regularization():
     ins, os, hs, bs = (784, 10, 100, 1000)
     loss = BinaryCrossEntropy()
     net = Network()
-    net.set_name('Simple Feedforward Network')
+    net.set_name('FF with Regularization')
     ffkwargs = dict(activation='relu')
     net.add(Feedforward(shape=(hs, ins), **ffkwargs))
     net.add(Feedforward(shape=(hs, hs), **ffkwargs))
@@ -109,8 +104,7 @@ def run_ff_with_regularization():
               batch_size=bs,
               learning_rate=1e-2,
               regularizer=('L2', 0.9),
-              epochs=25,
-              plot_loss=False)
+              epochs=100)
     get_accuracy_mnist(x_test, y_test, net)
 
 
@@ -125,14 +119,14 @@ def run_ff_with_dropout():
     net.add(Feedforward(shape=(hs, ins), **ffkwargs))
     net.add(Feedforward(shape=(hs, hs), **ffkwargs))
     net.add(Output(shape=(os, hs), **okwargs))
+    net.set_name('FF with Dropout')
     net.train(x_train,
               y_train,
               loss,
               optimizer='minibatch_sgd',
               batch_size=bs,
               learning_rate=1e-2,
-              epochs=100,
-              plot_loss=True)
+              epochs=100)
     get_accuracy_mnist(x_test, y_test, net)
 
 
@@ -145,15 +139,15 @@ def run_ff_with_minmax_scaling():
     net.add(Feedforward(shape=(hs, ins), preprocessing=['minmax_scaling']))
     net.add(Feedforward(shape=(hs, hs)))
     net.add(Output(shape=(os, hs), activation='sigmoid'))
+    net.set_name('FF with minmax scaling')
     net.train(x_train,
               y_train,
               loss,
               batch_size=bs,
               learning_rate=4e-1,
-              epochs=50,
+              epochs=100,
               plot_loss=True)
     get_accuracy_mnist(x_test, y_test, net)
-    predict_random_mnist(x_test, y_test, net)
 
 
 def run_ff_with_momentum():
@@ -165,6 +159,7 @@ def run_ff_with_momentum():
     net.add(Feedforward(shape=(hs, ins)))
     net.add(Feedforward(shape=(hs, hs)))
     net.add(Output(shape=(os, hs)))
+    net.set_name('FF with momentum')
     net.train(x_train,
               y_train,
               loss,
@@ -182,19 +177,17 @@ def run_ff_with_nesterov_momentum():
     ins, os, hs, bs = (784, 10, 100, 1000)
     loss = BinaryCrossEntropy()
     net = Network()
-    net.set_name('FF with nesterov momentum')
     net.add(Feedforward(shape=(hs, ins)))
     net.add(Output(shape=(os, hs)))
+    net.set_name('FF with nesterov momentum')
     net.train(x_train,
               y_train,
               loss,
               optimizer='nesterov_momentum',
               batch_size=bs,
               learning_rate=1e-1,
-              epochs=100,
-              plot_loss=False)
+              epochs=100)
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
 
 
 def run_no_hidden_layer_ff():
@@ -205,7 +198,7 @@ def run_no_hidden_layer_ff():
     bs = 1000
     loss = BinaryCrossEntropy()
     net = Network()
-    net.set_name('No hidden layer NN')
+    net.set_name('No hidden layer FF')
     net.add(Output(shape=(os, ins)))
     net.train(x_train,
               y_train,
@@ -213,10 +206,9 @@ def run_no_hidden_layer_ff():
               optimizer='nesterov_momentum',
               batch_size=bs,
               learning_rate=2e-1,
-              epochs=100,
-              plot_loss=False)
+              epochs=250)
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
+    plot_weights(net, save_plot=True)
 
 
 def run_two_hidden_layers_ff_relu():
@@ -225,7 +217,7 @@ def run_two_hidden_layers_ff_relu():
     ins, os, hs, bs = (784, 10, 100, 1000)
     loss = BinaryCrossEntropy()
     net = Network()
-    net.set_name('Two hidden layers NN with Relu')
+    net.set_name('Two hidden layers FF with Relu')
     ffkwargs = dict(activation='relu')
     net.add(Feedforward(shape=(hs, ins), **ffkwargs))
     net.add(Feedforward(shape=(hs, hs), **ffkwargs))
@@ -236,10 +228,9 @@ def run_two_hidden_layers_ff_relu():
               optimizer='nesterov_momentum',
               batch_size=bs,
               learning_rate=5e-3,
-              epochs=100,
-              plot_loss=False)
+              epochs=100)
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
+    plot_weights(net, save_plot=True)
 
 
 def run_no_hidden_layer_ff_relu():
@@ -250,7 +241,7 @@ def run_no_hidden_layer_ff_relu():
     bs = 1000
     loss = MSE()
     net = Network()
-    net.set_name('No hidden layer NN with Relu')
+    net.set_name('No hidden layer FF with Relu')
     net.add(Output(shape=(os, ins), activation='relu'))
     net.train(x_train,
               y_train,
@@ -258,10 +249,9 @@ def run_no_hidden_layer_ff_relu():
               optimizer='nesterov_momentum',
               batch_size=bs,
               learning_rate=5e-2,
-              epochs=250,
-              plot_loss=True)
+              epochs=250)
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
+    plot_weights(net, save_plot=True)
 
 
 def run_ff_with_adagrad():
@@ -279,10 +269,8 @@ def run_ff_with_adagrad():
               optimizer='adagrad',
               batch_size=bs,
               learning_rate=1e-3,
-              epochs=100,
-              plot_loss=False)
+              epochs=100)
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
 
 
 def run_ff_with_rmsprop():
@@ -301,15 +289,13 @@ def run_ff_with_rmsprop():
               optimizer='rmsprop',
               batch_size=bs,
               learning_rate=1e-4,
-              epochs=100,
-              plot_loss=True)
+              epochs=100)
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
 
 
 def run_ff_with_adam():
-    x_train, y_train, x_test, y_test = load_mnist(train_set_size=10000,
-                                                  test_set_size=1000)
+    x_train, y_train, x_test, y_test = load_mnist(train_set_size=50000,
+                                                  test_set_size=10000)
     ins, os, hs, bs = (784, 10, 100, 1000)
     loss = BinaryCrossEntropy()
     net = Network()
@@ -328,7 +314,7 @@ def run_ff_with_adam():
         regularizer=('L2', 0.5),
     )
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
+    plot_weights(net, save_plot=True)
 
 
 def run_ff_with_softmax():
@@ -341,18 +327,16 @@ def run_ff_with_softmax():
     net.add(Feedforward(shape=(hs, ins), activation='relu'))
     net.add(Feedforward(shape=(hs, hs), activation='relu'))
     net.add(Output(shape=(os, hs), activation='softmax'))
-    net.train(
-        x_train,
-        y_train,
-        loss,
-        batch_size=bs,
-        optimizer='adam',
-        learning_rate=1e-2,
-        epochs=25,
-        plot_loss=True,
-    )
+    net.train(x_train,
+              y_train,
+              loss,
+              batch_size=bs,
+              optimizer='adam',
+              learning_rate=1e-2,
+              epochs=100,
+              plot_loss=True)
     get_accuracy_mnist(x_test, y_test, net)
-    predict_random_mnist(x_test, y_test, net)
+    predict_random_mnist(x_test, y_test, net, save_plot=True)
 
 
 def run_ff_with_batchnorm():
@@ -367,71 +351,33 @@ def run_ff_with_batchnorm():
     net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
     net.add(Feedforward(shape=(hs, hs), batch_normalization=True))
     net.add(Output(shape=(os, hs), activation='softmax'))
-    net.train(
-        x_train,
-        y_train,
-        loss,
-        optimizer='adam',
-        batch_size=bs,
-        learning_rate=1e-2,
-        epochs=50,
-        plot_loss=True,
-    )
+    net.train(x_train,
+              y_train,
+              loss,
+              optimizer='adam',
+              batch_size=bs,
+              learning_rate=1e-2,
+              epochs=100,
+              plot_loss=True)
 
     get_accuracy_mnist(x_test, y_test, net)
-    plot_weights(net)
-    predict_random_mnist(x_test, y_test, net)
-
-
-def run_cnn():
-    ins, os, hs, bs = (784, 10, 100, 3000)
-    x_train, y_train, x_test, y_test = load_mnist(train_set_size=bs,
-                                                  test_set_size=1000)
-    loss = CategoricalCrossEntropy()
-    net = Network()
-    net.set_name('CNN')
-    fs = 24
-    # net.add(Convolutional(flatten=False, activation='relu',
-    #                 input_channels=1, num_filters=fs, kernel_size=5))
-    net.add(
-        Convolutional(flatten=True,
-                      activation='relu',
-                      input_channels=1,
-                      num_filters=fs * 2,
-                      kernel_size=5))
-    # net.add(MaxPooling())
-    net.add(Feedforward(shape=(hs, 27648), activation='relu'))
-    net.add(Output(shape=(os, hs), activation='softmax'))
-    net.train(
-        x_train,
-        y_train,
-        loss,
-        optimizer='adam',
-        batch_size=bs,
-        learning_rate=1e-3,
-        epochs=10,
-    )
-    get_accuracy_mnist(x_test, y_test, net)
-    predict_random_mnist(x_test, y_test, net)
-    # plot_weights(net)
+    predict_random_mnist(x_test, y_test, net, save_plot=True)
 
 
 if __name__ == '__main__':
+    # run_feedforward_gradient_checking()
+    # run_feedforward()
+    # run_ff_with_dropout()
+    # run_ff_with_regularization()
+    # run_ff_with_minmax_scaling()
+    # run_ff_with_momentum()
+    # run_ff_with_nesterov_momentum()
+    # run_no_hidden_layer_ff_relu()
+    # run_two_hidden_layers_ff_relu()
+    # run_ff_with_adagrad()
+    # run_ff_with_rmsprop()
     run_autoencoder()
-    run_feedforward()
-    run_feedforward_gradient_checking()
-    run_ff_with_dropout()
-    run_ff_with_regularization()
-    run_ff_with_minmax_scaling()
-    run_ff_with_momentum()
-    run_ff_with_nesterov_momentum()
     run_no_hidden_layer_ff()
-    run_two_hidden_layers_ff()
-    run_two_hidden_layers_ff_relu()
-    run_no_hidden_layer_ff_relu()
-    run_ff_with_adagrad()
-    run_ff_with_rmsprop()
     run_ff_with_adam()
     run_ff_with_softmax()
     run_ff_with_batchnorm()
-    # run_cnn()

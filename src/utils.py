@@ -35,9 +35,8 @@ def load_mnist(train_set_size=1000, test_set_size=100, select_label=None):
     return x_train, y_train_bin, x_test, y_test_bin
 
 
-def plot_random_mnist_autoencoder(net, save_plot=False):
-    cols = 3
-    rows = 3
+def plot_random_mnist_autoencoder(net, save_plot=False, show_plot=True):
+    cols, rows = 3, 3
     fig = plt.figure(figsize=(5, 5))
     plt.title(f'{net.__name__}', fontsize=12, y=1.08)
     plt.xticks([])
@@ -54,13 +53,14 @@ def plot_random_mnist_autoencoder(net, save_plot=False):
         plt.xticks([])
         plt.yticks([])
     if save_plot:
-        plt.savefig(os.path.join(settings.IMG_DIR, f'{net.__name__}.png'))
-    plt.show()
+        net_name = '_'.join(net.__name__.split(' '))
+        plt.savefig(os.path.join(settings.IMG_DIR, f'{net_name}.jpg'))
+    if show_plot:
+        plt.show()
 
 
-def predict_random_mnist(x, y, net, save_plot=False):
-    cols = 3
-    rows = 3
+def predict_random_mnist(x, y, net, save_plot=False, show_plot=True):
+    cols, rows = 3, 3
     fig = plt.figure(figsize=(5, 5))
     plt.title(f'{net.__name__}', fontsize=12, y=1.08)
     plt.xticks([])
@@ -77,8 +77,10 @@ def predict_random_mnist(x, y, net, save_plot=False):
         plt.yticks([])
         plt.title(f'Predicted: {pred}', fontsize=10)
     if save_plot:
-        plt.savefig(os.path.join(settings.IMG_DIR, f'{net.__name__}.png'))
-    plt.show()
+        net_name = '_'.join(net.__name__.split(' '))
+        plt.savefig(os.path.join(settings.IMG_DIR, f'{net_name}.jpg'))
+    if show_plot:
+        plt.show()
 
 
 def get_accuracy_mnist(x, y, net):
@@ -86,10 +88,10 @@ def get_accuracy_mnist(x, y, net):
     y_pred_scalar = np.argmax(y_pred, axis=0)
     y_scalar = np.argmax(y, axis=0)
     accuracy = np.sum(y_scalar == y_pred_scalar) / len(y_scalar)
-    logging.info(f'Accuracy: {100*accuracy}%')
+    logging.info(f'{net.__name__} - Accuracy: {100*accuracy}%')
 
 
-def plot_weights(net, save_plot=True):
+def plot_weights(net, save_plot=False, show_plot=True):
     for idx, layer in enumerate(net.layers):
         cols = int(np.sqrt(layer.shape[0]))
         rows = int(layer.shape[0] / cols)
@@ -108,7 +110,9 @@ def plot_weights(net, save_plot=True):
             plt.yticks([])
 
         if save_plot:
+            net_name = '_'.join(net.__name__.split(' '))
             plt.savefig(
                 os.path.join(settings.IMG_DIR,
-                             f'{net.__name__}_layer_{idx}_weights.png'))
-        plt.show()
+                             f'{net_name}_layer_{idx}_weights.jpg'))
+        if show_plot:
+            plt.show()
