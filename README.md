@@ -9,21 +9,21 @@
 
 ## Includes: 
 
-- [x] Gradient checking
+- [x] All main activations (ReLU, Leaky ReLU, Linear, Sigmoid, Softmax)
+
+- [x] A bunch of initializers (normal, uniform, ones, zeros, Glorot Normal/Uniform, He Normal/Uniform)
+
+- [x] A bunch of optimizers (SGD, Momentum, Nesterov Momentum, Adagrad, RMSProp, Adam)
+
+- [x] MSE, Binary Cross Entropy and Categorical Cross Entropy losses
 
 - [x] Batch Normalization
 
 - [x] Dropout
 
+- [x] Gradient checking
+
 - [x] L1 Regularization
-
-- [x] All main activations (ReLU, Leaky ReLU, Linear, Sigmoid, Softmax)
-
-- [x] A bunch of initializers (normal, uniform, ones, zers, Glorot Normal/Uniform, He Normal/Uniform)
-
-- [x] A bunch of optimizers (SGD, Momentum, Nesterov Momentum, Adagrad, RMSProp, Adam)
-
-- [x] MSE, Binary Cross Entropy and Categorical Cross Entropy losses
 
 - [x] MNIST prediction
 
